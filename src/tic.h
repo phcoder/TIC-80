@@ -167,11 +167,23 @@ typedef struct
 
 typedef struct
 {
-	
 	struct
 	{
-		u8 volume:4;
-		u8 wave:4;
+		union
+		{
+			struct
+			{
+				u8 volume:4;
+				u8 wave:4;
+			};
+
+			struct
+			{
+				u8 left:4;
+				u8 right:4;
+			}stereo;
+		};
+
 		u8 chord:4;
 		s8 pitch:4;
 	} data[SFX_TICKS];
@@ -183,23 +195,34 @@ typedef struct
 		s8 speed:3;
 		u8 reverse:1; // chord reverse
 		u8 note:4;
-		u8 stereo_left:1;
-		u8 stereo_right:1;
-		u8 temp:2;
+		u8 wave:4;
 	};
 
 	union
 	{
 		struct
 		{
-			tic_sound_loop wave;
-			tic_sound_loop volume;
+			union
+			{
+				struct
+				{
+					tic_sound_loop wave;
+					tic_sound_loop volume;
+				};
+
+				struct
+				{
+					tic_sound_loop left;
+					tic_sound_loop right;
+				}stereo;
+			};
+
 			tic_sound_loop chord;
 			tic_sound_loop pitch;
 		};
 
-		tic_sound_loop loops[4];
-	};
+		tic_sound_loop data[4];
+	}loops;
 
 } tic_sample;
 

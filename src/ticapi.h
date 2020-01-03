@@ -32,8 +32,20 @@ typedef struct
 	{
 		struct
 		{
-			s8 wave;
-			s8 volume;
+			union
+			{
+				struct
+				{
+					s8 wave;
+					s8 volume;
+				};
+
+				struct
+				{
+					s8 left;
+					s8 right;
+				}stereo;
+			};
 			s8 chord;
 			s8 pitch;
 		};

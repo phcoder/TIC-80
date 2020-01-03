@@ -131,43 +131,6 @@ static void setSpeed(Sfx* sfx, s32 delta)
 	history_add(sfx->history);
 }
 
-static void drawStereoSwitch(Sfx* sfx, s32 x, s32 y)
-{
-	tic_sample* effect = getEffect(sfx);
-
-	{
-		tic_rect rect = {x, y, TIC_FONT_WIDTH, TIC_FONT_HEIGHT};
-
-		if(checkMousePos(&rect))
-		{
-			setCursor(tic_cursor_hand);
-
-			showTooltip("left stereo");
-
-			if(checkMouseClick(&rect, tic_mouse_left))
-				effect->stereo_left = !effect->stereo_left;
-		}
-
-		drawShadedText(sfx->tic, "L", x, y, effect->stereo_left ? tic_color_13 : tic_color_12);
-	}
-
-	{
-		tic_rect rect = {x += TIC_FONT_WIDTH, y, TIC_FONT_WIDTH, TIC_FONT_HEIGHT};
-
-		if(checkMousePos(&rect))
-		{
-			setCursor(tic_cursor_hand);
-
-			showTooltip("right stereo");
-
-			if(checkMouseClick(&rect, tic_mouse_left))
-				effect->stereo_right = !effect->stereo_right;
-		}
-
-		drawShadedText(sfx->tic, "R", x, y, effect->stereo_right ? tic_color_13 : tic_color_12);
-	}
-}
-
 static void drawTopPanel(Sfx* sfx, s32 x, s32 y)
 {
 	const s32 Gap = 8*TIC_FONT_WIDTH;
@@ -177,14 +140,12 @@ static void drawTopPanel(Sfx* sfx, s32 x, s32 y)
 	tic_sample* effect = getEffect(sfx);
 
 	drawSwitch(sfx, x += Gap, y, "SPD", effect->speed, setSpeed);
-
-	drawStereoSwitch(sfx, x += Gap, y);
 }
 
 static void setLoopStart(Sfx* sfx, s32 delta)
 {
 	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	tic_sound_loop* loop = effect->loops.data + sfx->canvasTab;
 
 	loop->start += delta;
 
@@ -194,7 +155,7 @@ static void setLoopStart(Sfx* sfx, s32 delta)
 static void setLoopSize(Sfx* sfx, s32 delta)
 {
 	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	tic_sound_loop* loop = effect->loops.data + sfx->canvasTab;
 
 	loop->size += delta;
 
@@ -208,7 +169,7 @@ static void drawLoopPanel(Sfx* sfx, s32 x, s32 y)
 	enum {Gap = 2};
 
 	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	tic_sound_loop* loop = effect->loops.data + sfx->canvasTab;
 
 	drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->size, setLoopSize);
 	drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->start, setLoopStart);
@@ -480,7 +441,7 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y)
 	}
 
 	{
-		tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+		tic_sound_loop* loop = effect->loops.data + sfx->canvasTab;
 		if(loop->start > 0 || loop->size > 0)
 		{
 			for(s32 i = 0; i < loop->size; i++)

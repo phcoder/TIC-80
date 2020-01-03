@@ -1240,11 +1240,32 @@ static void sfx(tic_mem* memory, s32 index, s32 note, s32 pitch, tic_channel_dat
 	}
 
 	for(s32 i = 0; i < sizeof(tic_sfx_pos); i++)
-		*(channel->pos.data+i) = calcLoopPos(effect->loops + i, pos);
+		*(channel->pos.data+i) = calcLoopPos(effect->loops.data + i, pos);
 
-	u8 volume = MAX_VOLUME - effect->data[channel->pos.volume].volume;
+	u8 left = channel->volume.left;
+	u8 right = channel->volume.right;
 
-	if(volume > 0)
+	reg->volume = MAX_VOLUME;
+
+	if(effect->wave)
+	{
+		const tic_waveform* waveform = &machine->sound.sfx->waveform.envelopes[effect->wave];
+		memcpy(reg->waveform.data, waveform->data, sizeof(tic_waveform));
+
+		left *= MAX_VOLUME - effect->data[channel->pos.stereo.left].stereo.left;
+		right *= MAX_VOLUME - effect->data[channel->pos.stereo.right].stereo.right;
+		left /= MAX_VOLUME;
+		right /= MAX_VOLUME;
+	}
+	else
+	{
+		reg->volume -= effect->data[channel->pos.volume].volume;
+
+		u8 wave = effect->data[channel->pos.wave].wave;
+		const tic_waveform* waveform = &machine->sound.sfx->waveform.envelopes[wave];
+		memcpy(reg->waveform.data, waveform->data, sizeof(tic_waveform));
+	}
+
 	{
 		s8 arp = effect->data[channel->pos.chord].chord * (effect->reverse ? -1 : 1);
 		if(arp) note += arp;
@@ -1252,15 +1273,10 @@ static void sfx(tic_mem* memory, s32 index, s32 note, s32 pitch, tic_channel_dat
 		note = CLAMP(note, 0, COUNT_OF(NoteFreqs)-1);
 
 		reg->freq = NoteFreqs[note] + effect->data[channel->pos.pitch].pitch * (effect->pitch16x ? 16 : 1) + pitch;
-		reg->volume = volume;
-
-		u8 wave = effect->data[channel->pos.wave].wave;
-		const tic_waveform* waveform = &machine->sound.sfx->waveform.envelopes[wave];
-		memcpy(reg->waveform.data, waveform->data, sizeof(tic_waveform));
-
-		tic_tool_poke4(&memory->ram.stereo.data, channelIndex*2, channel->volume.left * !effect->stereo_left);
-		tic_tool_poke4(&memory->ram.stereo.data, channelIndex*2+1, channel->volume.right * !effect->stereo_right);
 	}
+
+	tic_tool_poke4(&memory->ram.stereo.data, channelIndex*2, left);
+	tic_tool_poke4(&memory->ram.stereo.data, channelIndex*2+1, right);
 }
 
 static void processMusic(tic_mem* memory)
