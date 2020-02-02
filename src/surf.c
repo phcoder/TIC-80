@@ -542,8 +542,8 @@ static void loadCover(Surf* surf)
 #endif					
 					tic->api.load(cart, data, size);
 
-				if(cart->cover.size)
-					updateMenuItemCover(surf, cart->cover.data, cart->cover.size);
+				// if(cart->cover.size)
+					// updateMenuItemCover(surf, cart->cover.data, cart->cover.size);
 
 				free(cart);
 			}

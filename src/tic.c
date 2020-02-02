@@ -46,7 +46,7 @@ typedef enum
 	CHUNK_DUMMY, 	// 0
 	CHUNK_TILES, 	// 1
 	CHUNK_SPRITES, 	// 2
-	CHUNK_COVER, 	// 3
+	CHUNK_COVER_DEP,// 3 - deprecated chunk
 	CHUNK_MAP, 		// 4
 	CHUNK_CODE, 	// 5
 	CHUNK_FLAGS,	// 6
@@ -59,6 +59,7 @@ typedef enum
 	CHUNK_PATTERNS_DEP, // 13 - deprecated chunk
 	CHUNK_MUSIC,	// 14
 	CHUNK_PATTERNS, // 15
+	CHUNK_COVER, 	// 16
 } ChunkType;
 
 typedef struct
@@ -1613,34 +1614,6 @@ static void api_music_frame(tic_mem* memory, s32 index, s32 frame, s32 row, bool
 		memory->ram.sound_state.flag.music_state = tic_music_play_frame;
 }
 
-static void initCover(tic_mem* tic)
-{
-	const tic_cover_image* cover = &tic->cart.cover;
-
-	if(cover->size)
-	{
-		gif_image* image = gif_read_data(cover->data, cover->size);
-
-		if (image)
-		{
-			if (image->width == TIC80_WIDTH && image->height == TIC80_HEIGHT)
-			{
-				enum { Size = TIC80_WIDTH * TIC80_HEIGHT };
-
-				for (s32 i = 0; i < Size; i++)
-				{
-					const gif_color* c = &image->palette[image->buffer[i]];
-					tic_rgb rgb = { c->r, c->g, c->b };
-					u8 color = tic_tool_find_closest_color(tic->cart.bank0.palette.colors, &rgb);
-					tic_tool_poke4(tic->ram.vram.screen.data, i, color);
-				}
-			}
-
-			gif_close(image);
-		}
-	}
-}
-
 static void api_sync(tic_mem* tic, u32 mask, s32 bank, bool toCart)
 {
 	tic_machine* machine = (tic_machine*)tic;
@@ -1673,13 +1646,6 @@ static void api_sync(tic_mem* tic, u32 mask, s32 bank, bool toCart)
 	}
 
 	machine->state.synced |= mask;
-}
-
-static void cart2ram(tic_mem* memory)
-{
-	api_sync(memory, 0, 0, false);
-
-	initCover(memory);
 }
 
 static const char* readMetatag(const char* code, const char* tag, const char* comment)
@@ -1822,7 +1788,9 @@ static void api_tick(tic_mem* tic, tic_tick_data* data)
 			if(strlen(code))
 			{
 				config = getScriptConfig(code);
-				cart2ram(tic);
+
+				api_sync(tic, 0, 0, false);
+				memcpy(tic->ram.vram.screen.data, tic->cart.cover.data, sizeof(tic_cover));
 
 				machine->state.synced = 0;
 				tic->input.data = 0;
@@ -1962,6 +1930,7 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 	#define LOAD_CHUNK(to) memcpy(&to, buffer, MIN(sizeof(to), chunk.size))
 
 	bool paletteExists = false;
+	struct{const u8* data; s32 size;} gifCover = {0, 0};
 
 	while(buffer < end)
 	{
@@ -1980,13 +1949,21 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 		case CHUNK_PATTERNS:	LOAD_CHUNK(cart->banks[chunk.bank].music.patterns);	break;
 		case CHUNK_PALETTE:		LOAD_CHUNK(cart->banks[chunk.bank].palette);		break;
 		case CHUNK_FLAGS:		LOAD_CHUNK(cart->banks[chunk.bank].flags);			break;
+		case CHUNK_COVER:
+			if(chunk.bank == 0)
+				LOAD_CHUNK(cart->cover.data);
+			break;
 		case CHUNK_CODE: 		
 			if(chunk.bank == 0)
 				LOAD_CHUNK(cart->code);
 			break;
-		case CHUNK_COVER:
-			LOAD_CHUNK(cart->cover.data);
-			cart->cover.size = chunk.size;
+		case CHUNK_COVER_DEP:
+			// workaround to load deprecated cover
+			if(chunk.bank == 0)
+			{
+				gifCover.data = buffer;
+				gifCover.size = chunk.size;
+			}
 			break;
 		case CHUNK_PATTERNS_DEP: 
 			{
@@ -2023,6 +2000,38 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 	{
 		static const u8 DB16[] = {0x14, 0x0c, 0x1c, 0x44, 0x24, 0x34, 0x30, 0x34, 0x6d, 0x4e, 0x4a, 0x4e, 0x85, 0x4c, 0x30, 0x34, 0x65, 0x24, 0xd0, 0x46, 0x48, 0x75, 0x71, 0x61, 0x59, 0x7d, 0xce, 0xd2, 0x7d, 0x2c, 0x85, 0x95, 0xa1, 0x6d, 0xaa, 0x2c, 0xd2, 0xaa, 0x99, 0x6d, 0xc2, 0xca, 0xda, 0xd4, 0x5e, 0xde, 0xee, 0xd6};
 		memcpy(cart->bank0.palette.data, DB16, sizeof(tic_palette));
+
+		printf("\n%s\n", "palatte loadded");
+	}
+
+	if(gifCover.size)
+	{
+		u8* data = malloc(TIC80_WIDTH * TIC80_HEIGHT * sizeof(u32));
+
+		if(data)
+		{
+			memcpy(data, gifCover.data, gifCover.size);
+
+			gif_image* image = gif_read_data(data, gifCover.size);
+
+			if (image)
+			{
+				if (image->width == TIC80_WIDTH && image->height == TIC80_HEIGHT)
+				{
+					for (s32 i = 0; i < TIC80_WIDTH * TIC80_HEIGHT; i++)
+					{
+						const gif_color* c = &image->palette[image->buffer[i]];
+						tic_rgb rgb = { c->r, c->g, c->b };
+						u8 color = tic_tool_find_closest_color(cart->bank0.palette.colors, &rgb);
+						tic_tool_poke4(cart->cover.data, i, color);
+					}
+				}
+
+				gif_close(image);
+			}
+
+			free(data);
+		}
 	}
 }
 
@@ -2084,7 +2093,14 @@ static s32 api_save(const tic_cartridge* cart, u8* buffer)
 	}
 
 	buffer = SAVE_CHUNK(CHUNK_CODE, cart->code, 0);
-	buffer = saveFixedChunk(buffer, CHUNK_COVER, cart->cover.data, cart->cover.size, 0);
+
+	// save cover only if we have nonempty screen
+	for(s32 i = 0; i < sizeof(tic_cover); i++)
+		if(cart->cover.data[i])
+		{
+			buffer = SAVE_CHUNK(CHUNK_COVER, cart->cover, 0);
+			break;
+		}
 
 	#undef SAVE_CHUNK
 

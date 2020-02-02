@@ -1242,8 +1242,8 @@ static void setCoverImage()
 
 			screen2buffer(buffer, tic->screen, rect);
 
-			gif_write_animation(impl.studio.tic->cart.cover.data, &impl.studio.tic->cart.cover.size,
-				TIC80_WIDTH, TIC80_HEIGHT, (const u8*)buffer, 1, TIC80_FRAMERATE, 1);
+			// gif_write_animation(impl.studio.tic->cart.cover.data, &impl.studio.tic->cart.cover.size,
+				// TIC80_WIDTH, TIC80_HEIGHT, (const u8*)buffer, 1, TIC80_FRAMERATE, 1);
 
 			free(buffer);
 

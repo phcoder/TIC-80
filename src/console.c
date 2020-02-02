@@ -424,7 +424,7 @@ static bool onConsoleLoadSectionCommand(Console* console, const char* param)
 
 						switch(i)
 						{
-						case 0: memcpy(&tic->cart.cover, 			&cart->cover, 			sizeof cart->cover); break;
+						case 0: memcpy(&tic->cart.cover, 			&cart->cover, 			sizeof(tic_cover)); break;
 						case 1: memcpy(&tic->cart.bank0.tiles, 		&cart->bank0.tiles, 	sizeof(tic_tiles)*2); break;
 						case 2: memcpy(&tic->cart.bank0.map, 		&cart->bank0.map, 		sizeof(tic_map)); break;
 						case 3: memcpy(&tic->cart.code, 			&cart->code, 			sizeof(tic_code)); break;
@@ -1597,47 +1597,48 @@ static void onImportCover(const char* name, const void* buffer, size_t size, voi
 {
 	Console* console = (Console*)data;
 
-	if(name)
-	{
-		static const char GifExt[] = ".gif";
+	// if(name)
+	// {
+	// 	static const char GifExt[] = ".gif";
 
-		const char* pos = strstr(name, GifExt);
+	// 	const char* pos = strstr(name, GifExt);
 
-		if(pos && strcmp(pos, GifExt) == 0)
-		{
-			gif_image* image = gif_read_data(buffer, (s32)size);
+	// 	if(pos && strcmp(pos, GifExt) == 0)
+	// 	{
+	// 		gif_image* image = gif_read_data(buffer, (s32)size);
 
-			if (image)
-			{
-				enum
-				{
-					Width = TIC80_WIDTH,
-					Height = TIC80_HEIGHT,
-					Size = Width * Height,
-				};
+	// 		if (image)
+	// 		{
+	// 			enum
+	// 			{
+	// 				Width = TIC80_WIDTH,
+	// 				Height = TIC80_HEIGHT,
+	// 				Size = Width * Height,
+	// 			};
 
-				if(image->width == Width && image->height == Height)
-				{
-					if(size <= sizeof console->tic->cart.cover.data)
-					{
-						console->tic->cart.cover.size = size;
-						memcpy(console->tic->cart.cover.data, buffer, size);
+	// 			if(image->width == Width && image->height == Height)
+	// 			{
+	// 				if(size <= sizeof console->tic->cart.cover.data)
+	// 				{
+	// 					console->tic->cart.cover.size = size;
+	// 					memcpy(console->tic->cart.cover.data, buffer, size);
 
-						printLine(console);
-						printBack(console, name);
-						printBack(console, " successfully imported");
-					}
-					else printError(console, "\ncover image too big :(");
-				}
-				else printError(console, "\ncover image must be 240x136 :(");
+	// 					printLine(console);
+	// 					printBack(console, name);
+	// 					printBack(console, " successfully imported");
+	// 				}
+	// 				else printError(console, "\ncover image too big :(");
+	// 			}
+	// 			else printError(console, "\ncover image must be 240x136 :(");
 
-				gif_close(image);
-			}
-			else printError(console, "\nfile importing error :(");
-		}
-		else printBack(console, "\nonly .gif files can be imported :|");
-	}
-	else printBack(console, "\nfile not imported :|");
+	// 			gif_close(image);
+	// 		}
+	// 		else printError(console, "\nfile importing error :(");
+	// 	}
+	// 	else printBack(console, "\nonly .gif files can be imported :|");
+	// }
+	// else 
+		printBack(console, "\nfile not imported :|");
 
 	commandDone(console);
 }
@@ -1764,19 +1765,19 @@ static void onCoverExported(GetResult result, void* data)
 
 static void exportCover(Console* console)
 {
-	tic_cover_image* cover = &console->tic->cart.cover;
+	// tic_cover_image* cover = &console->tic->cart.cover;
 
-	if(cover->size)
-	{
-		void* data = malloc(cover->size);
-		memcpy(data, cover->data, cover->size);
-		fsGetFileData(onCoverExported, "cover.gif", data, cover->size, DEFAULT_CHMOD, console);
-	}
-	else
-	{
-		printBack(console, "\ncover image is empty, run game and\npress [F7] to assign cover image");
-		commandDone(console);
-	}
+	// if(cover->size)
+	// {
+	// 	void* data = malloc(cover->size);
+	// 	memcpy(data, cover->data, cover->size);
+	// 	fsGetFileData(onCoverExported, "cover.gif", data, cover->size, DEFAULT_CHMOD, console);
+	// }
+	// else
+	// {
+	// 	printBack(console, "\ncover image is empty, run game and\npress [F7] to assign cover image");
+	// 	commandDone(console);
+	// }
 }
 
 static void exportSprites(Console* console)
