@@ -30,7 +30,6 @@
 #include "ticapi.h"
 #include "tools.h"
 #include "machine.h"
-#include "ext/gif.h"
 
 #define CLOCKRATE (255<<13)
 #define ENVELOPE_FREQ_SCALE 2
@@ -1930,7 +1929,6 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 	#define LOAD_CHUNK(to) memcpy(&to, buffer, MIN(sizeof(to), chunk.size))
 
 	bool paletteExists = false;
-	struct{const u8* data; s32 size;} gifCover = {0, 0};
 
 	while(buffer < end)
 	{
@@ -1956,14 +1954,6 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 		case CHUNK_CODE: 		
 			if(chunk.bank == 0)
 				LOAD_CHUNK(cart->code);
-			break;
-		case CHUNK_COVER_DEP:
-			// workaround to load deprecated cover
-			if(chunk.bank == 0)
-			{
-				gifCover.data = buffer;
-				gifCover.size = chunk.size;
-			}
 			break;
 		case CHUNK_PATTERNS_DEP: 
 			{
@@ -2000,38 +1990,6 @@ static void api_load(tic_cartridge* cart, const u8* buffer, s32 size)
 	{
 		static const u8 DB16[] = {0x14, 0x0c, 0x1c, 0x44, 0x24, 0x34, 0x30, 0x34, 0x6d, 0x4e, 0x4a, 0x4e, 0x85, 0x4c, 0x30, 0x34, 0x65, 0x24, 0xd0, 0x46, 0x48, 0x75, 0x71, 0x61, 0x59, 0x7d, 0xce, 0xd2, 0x7d, 0x2c, 0x85, 0x95, 0xa1, 0x6d, 0xaa, 0x2c, 0xd2, 0xaa, 0x99, 0x6d, 0xc2, 0xca, 0xda, 0xd4, 0x5e, 0xde, 0xee, 0xd6};
 		memcpy(cart->bank0.palette.data, DB16, sizeof(tic_palette));
-
-		printf("\n%s\n", "palatte loadded");
-	}
-
-	if(gifCover.size)
-	{
-		u8* data = malloc(TIC80_WIDTH * TIC80_HEIGHT * sizeof(u32));
-
-		if(data)
-		{
-			memcpy(data, gifCover.data, gifCover.size);
-
-			gif_image* image = gif_read_data(data, gifCover.size);
-
-			if (image)
-			{
-				if (image->width == TIC80_WIDTH && image->height == TIC80_HEIGHT)
-				{
-					for (s32 i = 0; i < TIC80_WIDTH * TIC80_HEIGHT; i++)
-					{
-						const gif_color* c = &image->palette[image->buffer[i]];
-						tic_rgb rgb = { c->r, c->g, c->b };
-						u8 color = tic_tool_find_closest_color(cart->bank0.palette.colors, &rgb);
-						tic_tool_poke4(cart->cover.data, i, color);
-					}
-				}
-
-				gif_close(image);
-			}
-
-			free(data);
-		}
 	}
 }
 

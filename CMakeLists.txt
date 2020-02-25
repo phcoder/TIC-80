@@ -269,25 +269,6 @@ target_include_directories(squirrel PRIVATE ${SQUIRREL_DIR}/squirrel)
 target_include_directories(squirrel PRIVATE ${SQUIRREL_DIR}/sqstdlib)
 
 ################################
-# GIFLIB
-################################
-
-set(GIFLIB_DIR ${THIRDPARTY_DIR}/giflib)
-set(GIFLIB_SRC
-	${GIFLIB_DIR}/dgif_lib.c
-	${GIFLIB_DIR}/egif_lib.c
-	${GIFLIB_DIR}/gif_err.c
-	${GIFLIB_DIR}/gif_font.c
-	${GIFLIB_DIR}/gif_hash.c
-	${GIFLIB_DIR}/gifalloc.c
-	${GIFLIB_DIR}/openbsd-reallocarray.c
-)
-add_library(giflib STATIC ${GIFLIB_SRC})
-target_include_directories(giflib 
-	PRIVATE ${GIFLIB_DIR}
-	INTERFACE ${THIRDPARTY_DIR}/giflib)
-
-################################
 # TIC-80 core
 ################################
 
@@ -300,7 +281,6 @@ set(TIC80CORE_SRC
 	${TIC80CORE_DIR}/luaapi.c 
 	${TIC80CORE_DIR}/wrenapi.c 
 	${TIC80CORE_DIR}/squirrelapi.c
-	${TIC80CORE_DIR}/ext/gif.c
 	${THIRDPARTY_DIR}/blip-buf/blip_buf.c # TODO: link it as lib?
 	${THIRDPARTY_DIR}/duktape/src/duktape.c # TODO: link it as lib?
 )
@@ -319,7 +299,7 @@ target_include_directories(tic80core
 	PUBLIC 
 		${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(tic80core lua lpeg wren squirrel giflib)
+target_link_libraries(tic80core lua lpeg wren squirrel)
 
 if(LINUX)
 	target_link_libraries(tic80core m)
@@ -623,6 +603,25 @@ if(BUILD_DEMO_CARTS)
 endif()
 
 ################################
+# GIFLIB
+################################
+
+set(GIFLIB_DIR ${THIRDPARTY_DIR}/giflib)
+set(GIFLIB_SRC
+	${GIFLIB_DIR}/dgif_lib.c
+	${GIFLIB_DIR}/egif_lib.c
+	${GIFLIB_DIR}/gif_err.c
+	${GIFLIB_DIR}/gif_font.c
+	${GIFLIB_DIR}/gif_hash.c
+	${GIFLIB_DIR}/gifalloc.c
+	${GIFLIB_DIR}/openbsd-reallocarray.c
+)
+add_library(giflib STATIC ${GIFLIB_SRC})
+target_include_directories(giflib 
+	PRIVATE ${GIFLIB_DIR}
+	INTERFACE ${THIRDPARTY_DIR}/giflib)
+
+################################
 # TIC-80 lib
 ################################
 
@@ -662,7 +661,7 @@ target_include_directories(${TIC80_OUTPUT}lib PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${THIRDPARTY_DIR}/curl/include)
 
-target_link_libraries(${TIC80_OUTPUT}lib tic80core zlib libcurl)
+target_link_libraries(${TIC80_OUTPUT}lib tic80core zlib libcurl giflib)
 
 if(BUILD_PRO)
 	target_compile_definitions(tic80lib PRIVATE TIC80_PRO)
