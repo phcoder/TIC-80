@@ -393,7 +393,7 @@ static void drawCanvasTabs(Sfx* sfx, s32 x, s32 y)
 			}
 
 			drawShadedText(sfx->tic, Label, rect.x, rect.y, effect->reverse ? tic_color_12 : tic_color_13);
-		}	
+		}   
 		break;
 	default: break;
 	}
@@ -444,10 +444,10 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y)
 
 			switch(sfx->canvasTab)
 			{
-			case SFX_VOLUME_TAB: 	effect->data[mx].volume = my; break;
-			case SFX_CHORD_TAB: 	effect->data[mx].chord = CANVAS_ROWS - my - 1; break;
-			case SFX_PITCH_TAB: 	effect->data[mx].pitch = CANVAS_ROWS / 2 - my - 1; break;
-			case SFX_WAVE_TAB: 		effect->data[mx].wave = CANVAS_ROWS - my - 1; break;
+			case SFX_VOLUME_TAB:    effect->data[mx].volume = my; break;
+			case SFX_CHORD_TAB:     effect->data[mx].chord = CANVAS_ROWS - my - 1; break;
+			case SFX_PITCH_TAB:     effect->data[mx].pitch = CANVAS_ROWS / 2 - my - 1; break;
+			case SFX_WAVE_TAB:      effect->data[mx].wave = CANVAS_ROWS - my - 1; break;
 			default: break;
 			}
 
@@ -540,7 +540,7 @@ static void drawPiano(Sfx* sfx, s32 x, s32 y)
 						break;
 					}
 				}
-			}			
+			}           
 		}
 	}
 
@@ -735,14 +735,14 @@ static void processEnvelopesKeyboard(Sfx* sfx)
 
 	if(ctrl)
 	{
-		if(keyWasPressed(tic_key_z)) 		undo(sfx);
-		else if(keyWasPressed(tic_key_y)) 	redo(sfx);
+		if(keyWasPressed(tic_key_z))        undo(sfx);
+		else if(keyWasPressed(tic_key_y))   redo(sfx);
 	}
 
-	if(keyWasPressed(tic_key_tab)) 			sfx->tab = SFX_WAVEFORM_TAB;
-	else if(keyWasPressed(tic_key_left))  	sfx->index--;
-	else if(keyWasPressed(tic_key_right)) 	sfx->index++;
-	else if(keyWasPressed(tic_key_delete)) 	resetSfx(sfx);
+	if(keyWasPressed(tic_key_tab))          sfx->tab = SFX_WAVEFORM_TAB;
+	else if(keyWasPressed(tic_key_left))    sfx->index--;
+	else if(keyWasPressed(tic_key_right))   sfx->index++;
+	else if(keyWasPressed(tic_key_delete))  resetSfx(sfx);
 }
 
 static void processWaveformKeyboard(Sfx* sfx)
@@ -761,14 +761,14 @@ static void processWaveformKeyboard(Sfx* sfx)
 
 	if(ctrl)
 	{
-		if(keyWasPressed(tic_key_z)) 		undo(sfx);
-		else if(keyWasPressed(tic_key_y)) 	redo(sfx);
+		if(keyWasPressed(tic_key_z))        undo(sfx);
+		else if(keyWasPressed(tic_key_y))   redo(sfx);
 	}
 
-	if(keyWasPressed(tic_key_tab)) 			sfx->tab = SFX_ENVELOPES_TAB;
-	else if(keyWasPressed(tic_key_left))  	sfx->waveform.index--;
-	else if(keyWasPressed(tic_key_right)) 	sfx->waveform.index++;
-	else if(keyWasPressed(tic_key_delete)) 	resetWave(sfx);
+	if(keyWasPressed(tic_key_tab))          sfx->tab = SFX_ENVELOPES_TAB;
+	else if(keyWasPressed(tic_key_left))    sfx->waveform.index--;
+	else if(keyWasPressed(tic_key_right))   sfx->waveform.index++;
+	else if(keyWasPressed(tic_key_delete))  resetWave(sfx);
 }
 
 static void drawModeTabs(Sfx* sfx)
@@ -994,15 +994,54 @@ static void waveformTick(Sfx* sfx)
 	drawWaveformBar(sfx, 36, 110);
 }
 
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum {Width = 74, Height = 84, Round = 2};
+
+	typedef struct {s32 x; s32 y; s32 x1; s32 y1; u8 color;} Edge; 
+	static const Edge Edges[] = 
+	{
+		{Width, Round, Width, Height - Round, tic_color_15},
+		{Round, Height, Width - Round, Height, tic_color_15},
+		{Width - Round, Height, Width, Height - Round, tic_color_15},
+		{Width - Round, 0, Width, Round, tic_color_15},
+		{0, Height - Round, Round, Height, tic_color_15},
+		{Round, 0, Width - Round, 0, tic_color_13},
+		{0, Round, 0, Height - Round, tic_color_13},
+		{0, Round, Round, 0, tic_color_12},
+	};
+
+	for(const Edge* edge = Edges; edge < Edges + COUNT_OF(Edges); edge++)
+		tic->api.line(tic, x + edge->x, y + edge->y, x + edge->x1, y + edge->y1, edge->color);
+}
+
 static void tick(Sfx* sfx)
 {
 	sfx->play.active = false;
 
-	switch(sfx->tab)
-	{
-	case SFX_WAVEFORM_TAB: waveformTick(sfx); break;
-	case SFX_ENVELOPES_TAB: envelopesTick(sfx); break;
-	}
+	// switch(sfx->tab)
+	// {
+	// case SFX_WAVEFORM_TAB: waveformTick(sfx); break;
+	// case SFX_ENVELOPES_TAB: envelopesTick(sfx); break;
+	// }
+
+	processKeyboard(sfx);
+	processEnvelopesKeyboard(sfx);
+
+	sfx->tic->api.clear(sfx->tic, tic_color_14);
+
+	drawWavePanel(sfx, 10, 21);
+
+	// drawSfxToolbar(sfx);
+	drawToolbar(sfx->tic, true);
+
+
 
 	playSound(sfx);
 }
