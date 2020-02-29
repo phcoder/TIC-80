@@ -116,7 +116,7 @@ static inline s32 freq2period(s32 freq)
 	{
 		MinPeriodValue = 10,
 		MaxPeriodValue = 4096,
-		Rate = CLOCKRATE * ENVELOPE_FREQ_SCALE / ENVELOPE_VALUES
+		Rate = CLOCKRATE * ENVELOPE_FREQ_SCALE / WAVE_VALUES
 	};
 
 	if(freq == 0) return MaxPeriodValue;
@@ -137,7 +137,7 @@ static void runEnvelope(blip_buffer_t* blip, tic_sound_register* reg, tic_sound_
 
 	for ( ; data->time < end_time; data->time += period )
 	{
-		data->phase = (data->phase + 1) % ENVELOPE_VALUES;
+		data->phase = (data->phase + 1) % WAVE_VALUES;
 
 		update_amp(blip, data, getAmp(reg, tic_tool_peek4(reg->waveform.data, data->phase) * volume / MAX_VOLUME));
 	}

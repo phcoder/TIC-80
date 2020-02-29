@@ -250,7 +250,7 @@ static void drawWaveButtons(Sfx* sfx, s32 x, s32 y)
 		0b00000000,
 	};
 
-	enum {Scale = 4, Width = 10, Height = 5, Gap = 1, Count = ENVELOPES_COUNT, Rows = Count, HGap = 2};
+	enum {Scale = 4, Width = 10, Height = 5, Gap = 1, Count = WAVES_COUNT, Rows = Count, HGap = 2};
 
 	for(s32 i = 0; i < Count; i++)
 	{
@@ -307,7 +307,7 @@ static void drawWaveButtons(Sfx* sfx, s32 x, s32 y)
 		{
 			tic_waveform* wave = getWaveformById(sfx, i);
 
-			for(s32 i = 0; i < ENVELOPE_VALUES/Scale; i++)
+			for(s32 i = 0; i < WAVE_VALUES/Scale; i++)
 			{
 				s32 value = tic_tool_peek4(wave->data, i*Scale)/Scale;
 				sfx->tic->api.pixel(sfx->tic, rect.x + i+1, rect.y + Height - value - 2, tic_color_12);
@@ -889,14 +889,14 @@ static void drawWaveformBar(Sfx* sfx, s32 x, s32 y)
 	{
 		Border = 2,
 		Scale = 2,
-		Width = ENVELOPE_VALUES/Scale + Border, 
+		Width = WAVE_VALUES/Scale + Border, 
 		Height = CANVAS_HEIGHT/CANVAS_SIZE/Scale + Border,
 		Gap = 3,
 		Rows = 2,
-		Cols = ENVELOPES_COUNT/Rows,
+		Cols = WAVES_COUNT/Rows,
 	};
 
-	for(s32 i = 0; i < ENVELOPES_COUNT; i++)
+	for(s32 i = 0; i < WAVES_COUNT; i++)
 	{
 		tic_rect rect = {x + (i%Cols)*(Width+Gap), y + (i/Cols)*(Height+Gap), Width, Height};
 
@@ -925,7 +925,7 @@ static void drawWaveformBar(Sfx* sfx, s32 x, s32 y)
 		{
 			tic_waveform* wave = getWaveformById(sfx, i);
 
-			for(s32 i = 0; i < ENVELOPE_VALUES/Scale; i++)
+			for(s32 i = 0; i < WAVE_VALUES/Scale; i++)
 			{
 				s32 value = tic_tool_peek4(wave->data, i*Scale)/Scale;
 				sfx->tic->api.pixel(sfx->tic, rect.x + i+1, rect.y + Height - value - 2, tic_color_0);
@@ -936,7 +936,7 @@ static void drawWaveformBar(Sfx* sfx, s32 x, s32 y)
 
 static void drawWaveformCanvas(Sfx* sfx, s32 x, s32 y)
 {
-	enum {Rows = CANVAS_ROWS, Width = ENVELOPE_VALUES * CANVAS_SIZE, Height = CANVAS_HEIGHT};
+	enum {Rows = CANVAS_ROWS, Width = WAVE_VALUES * CANVAS_SIZE, Height = CANVAS_HEIGHT};
 
 	tic_rect rect = {x, y, Width, Height};
 
@@ -973,7 +973,7 @@ static void drawWaveformCanvas(Sfx* sfx, s32 x, s32 y)
 
 	tic_waveform* wave = getWaveform(sfx);
 
-	for(s32 i = 0; i < ENVELOPE_VALUES; i++)
+	for(s32 i = 0; i < WAVE_VALUES; i++)
 	{
 		s32 value = tic_tool_peek4(wave->data, i);
 		drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (Height - (value+1)*CANVAS_SIZE));
@@ -998,13 +998,38 @@ static void waveformTick(Sfx* sfx)
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
+static void drawPanelBorder(tic_mem* tic, s32 x, s32 y, s32 w, s32 h, tic_color color)
+{
+	tic->api.rect(tic, x, y, w, h, color);
+
+	tic->api.rect(tic, x, y-1, w, 1, tic_color_15);
+	tic->api.rect(tic, x-1, y, 1, h, tic_color_15);
+	tic->api.rect(tic, x, y+h, w, 1, tic_color_13);
+	tic->api.rect(tic, x+w, y, 1, h, tic_color_13);
+}
+
+static void drawWaves(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum{WaveWidth = 10, WaveHeight = 6, MarginRight = 6, MarginBottom = 4, Cols = 4, Rows = 4};
+
+	for(s32 i = 0; i < WAVES_COUNT; i++)
+	{
+		s32 xi = i % Cols;
+		s32 yi = i / Cols;
+
+		drawPanelBorder(tic, x + xi * (WaveWidth + MarginRight), y + yi * (WaveHeight + MarginBottom), WaveWidth, WaveHeight, tic_color_0);
+	}
+}
+
 static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 {
 	tic_mem* tic = sfx->tic;
 
-	enum {Width = 74, Height = 84, Round = 2};
+	enum {Width = 73, Height = 83, Round = 2};
 
-	typedef struct {s32 x; s32 y; s32 x1; s32 y1; u8 color;} Edge; 
+	typedef struct {s32 x; s32 y; s32 x1; s32 y1; tic_color color;} Edge; 
 	static const Edge Edges[] = 
 	{
 		{Width, Round, Width, Height - Round, tic_color_15},
@@ -1019,6 +1044,10 @@ static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 
 	for(const Edge* edge = Edges; edge < Edges + COUNT_OF(Edges); edge++)
 		tic->api.line(tic, x + edge->x, y + edge->y, x + edge->x1, y + edge->y1, edge->color);
+
+	drawPanelBorder(tic, x + 4, y + 4, 66, 34, tic_color_5);
+
+	drawWaves(sfx, x + 8, y + 43);
 }
 
 static void tick(Sfx* sfx)
