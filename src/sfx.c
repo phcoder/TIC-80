@@ -489,7 +489,7 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y)
 	}
 }
 
-static void drawPiano(Sfx* sfx, s32 x, s32 y)
+static void drawPiano2(Sfx* sfx, s32 x, s32 y)
 {
 	tic_sample* effect = getEffect(sfx);
 
@@ -868,7 +868,7 @@ static void envelopesTick(Sfx* sfx)
 	sfx->tic->api.clear(sfx->tic, tic_color_14);
 
 	enum{ Gap = 3, Start = 40};
-	drawPiano(sfx, Start, TIC80_HEIGHT - PIANO_HEIGHT - Gap);
+	drawPiano2(sfx, Start, TIC80_HEIGHT - PIANO_HEIGHT - Gap);
 	drawTopPanel(sfx, Start, TOOLBAR_SIZE + Gap);
 
 	drawSfxToolbar(sfx);
@@ -1064,9 +1064,9 @@ static void drawEditorPanelBG(Sfx* sfx, s32 x, s32 y)
 
 	drawPanelBorder(tic, x, y, Width, Height, tic_color_0);
 
-	for(s32 j = 0; j < Rows; j++)
-		for(s32 i = 0; i < Cols; i++)
-			tic->api.rect(tic, x + i * (LedWidth + Gap) + Gap, y + j * (LedHeight + Gap) + Gap, LedWidth, LedHeight, tic_color_15);
+	for(s32 j = Gap; j < Height; j += LedHeight + Gap)
+		for(s32 i = Gap; i < Width; i += LedWidth + Gap)
+			tic->api.rect(tic, x + i, y + j, LedWidth, LedHeight, tic_color_15);
 }
 
 static void drawVolumePanel(Sfx* sfx, s32 x, s32 y)
@@ -1090,6 +1090,45 @@ static void drawPitchPanel(Sfx* sfx, s32 x, s32 y)
 	drawEditorPanelBG(sfx, x, y);
 }
 
+static void drawPianoOctave(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum 
+	{
+		WhiteWidth = 3, WhiteHeight = 8, WhiteCount = 7,
+		BlackWidth = 3, BlackHeight = 4, BlackCount = 6, BlackSkip = 2,
+		Gap = 1, 
+		Width = WhiteCount * (WhiteWidth + Gap) - Gap
+	};
+
+	for(s32 i = 0; i < WhiteCount; i++)
+		tic->api.rect(tic, x + i * (WhiteWidth + Gap), y, WhiteWidth, WhiteHeight, tic_color_12);
+
+	tic->api.rect(tic, x, y + (WhiteHeight - 1), Width, 1, tic_color_0);
+
+	for(s32 i = 0; i < BlackCount; i++)
+	{
+		tic->api.rect(tic, x + i * (BlackWidth + Gap) + 3, y, Gap, WhiteHeight, tic_color_15);
+
+		if(i == BlackSkip) continue;
+
+		tic->api.rect(tic, x + i * (BlackWidth + Gap) + 2, y, BlackWidth, BlackHeight, tic_color_0);
+	}
+}
+
+static void drawPiano(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum {Width = 29};
+
+	for(s32 i = 0; i < OCTAVES; i++)
+	{
+		drawPianoOctave(sfx, x + Width*i, y);
+	}
+}
+
 static void tick(Sfx* sfx)
 {
 	tic_mem* tic = sfx->tic;
@@ -1105,6 +1144,8 @@ static void tick(Sfx* sfx)
 	drawVolumePanel(sfx, 101, 13);
 	drawArpeggioPanel(sfx, 101, 50);
 	drawPitchPanel(sfx, 101, 87);
+
+	drawPiano(sfx, 5, 127);
 
 	drawToolbar(tic, true);
 
