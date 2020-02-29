@@ -1012,14 +1012,14 @@ static void drawWaves(Sfx* sfx, s32 x, s32 y)
 {
 	tic_mem* tic = sfx->tic;
 
-	enum{WaveWidth = 10, WaveHeight = 6, MarginRight = 6, MarginBottom = 4, Cols = 4, Rows = 4};
+	enum{Width = 10, Height = 6, MarginRight = 6, MarginBottom = 4, Cols = 4, Rows = 4};
 
 	for(s32 i = 0; i < WAVES_COUNT; i++)
 	{
 		s32 xi = i % Cols;
 		s32 yi = i / Cols;
 
-		drawPanelBorder(tic, x + xi * (WaveWidth + MarginRight), y + yi * (WaveHeight + MarginBottom), WaveWidth, WaveHeight, tic_color_0);
+		drawPanelBorder(tic, x + xi * (Width + MarginRight), y + yi * (Height + MarginBottom), Width, Height, tic_color_0);
 	}
 }
 
@@ -1047,30 +1047,66 @@ static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 
 	drawPanelBorder(tic, x + 4, y + 4, 66, 34, tic_color_5);
 
-	drawWaves(sfx, x + 8, y + 43);
+	drawWaves(sfx, x + 8, y + 43);	
+}
+
+static void drawEditorPanelBG(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum 
+	{
+		Cols = SFX_TICKS, Rows = 16, 
+		LedWidth = 3, LedHeight = 1, Gap = 1, 
+		Width = (LedWidth + Gap) * Cols + Gap, 
+		Height = (LedHeight + Gap) * Rows + Gap
+	};
+
+	drawPanelBorder(tic, x, y, Width, Height, tic_color_0);
+
+	for(s32 j = 0; j < Rows; j++)
+		for(s32 i = 0; i < Cols; i++)
+			tic->api.rect(tic, x + i * (LedWidth + Gap) + Gap, y + j * (LedHeight + Gap) + Gap, LedWidth, LedHeight, tic_color_15);
+}
+
+static void drawVolumePanel(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	drawEditorPanelBG(sfx, x, y);
+}
+
+static void drawArpeggioPanel(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	drawEditorPanelBG(sfx, x, y);
+}
+
+static void drawPitchPanel(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	drawEditorPanelBG(sfx, x, y);
 }
 
 static void tick(Sfx* sfx)
 {
-	sfx->play.active = false;
+	tic_mem* tic = sfx->tic;
 
-	// switch(sfx->tab)
-	// {
-	// case SFX_WAVEFORM_TAB: waveformTick(sfx); break;
-	// case SFX_ENVELOPES_TAB: envelopesTick(sfx); break;
-	// }
+	sfx->play.active = false;
 
 	processKeyboard(sfx);
 	processEnvelopesKeyboard(sfx);
 
-	sfx->tic->api.clear(sfx->tic, tic_color_14);
+	tic->api.clear(tic, tic_color_14);
 
 	drawWavePanel(sfx, 10, 21);
+	drawVolumePanel(sfx, 101, 13);
+	drawArpeggioPanel(sfx, 101, 50);
+	drawPitchPanel(sfx, 101, 87);
 
-	// drawSfxToolbar(sfx);
-	drawToolbar(sfx->tic, true);
-
-
+	drawToolbar(tic, true);
 
 	playSound(sfx);
 }
