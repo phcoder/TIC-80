@@ -40,16 +40,16 @@ struct Sfx
 		s32 note;
 	} play;
 	
-	struct
-	{
-		u8 index:4;
-	} waveform;
+	// struct
+	// {
+	// 	u8 index:4;
+	// } waveform;
 
-	enum
-	{
-		SFX_WAVEFORM_TAB, 
-		SFX_ENVELOPES_TAB,
-	} tab;
+	// enum
+	// {
+	// 	SFX_WAVEFORM_TAB, 
+	// 	SFX_ENVELOPES_TAB,
+	// } tab;
 
 	struct History* history;
 
