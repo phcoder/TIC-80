@@ -40,14 +40,6 @@ struct Sfx
 		s32 note;
 	} play;
 	
-	enum 
-	{
-		SFX_WAVE_TAB = 0,
-		SFX_VOLUME_TAB,
-		SFX_CHORD_TAB,
-		SFX_PITCH_TAB,
-	}canvasTab;
-
 	struct
 	{
 		u8 index:4;

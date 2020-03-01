@@ -23,19 +23,26 @@
 #include "sfx.h"
 #include "history.h"
 
-#define CANVAS_SIZE 6
-#define CANVAS_COLS (SFX_TICKS)
-#define CANVAS_ROWS (16)
-#define CANVAS_WIDTH (CANVAS_COLS * CANVAS_SIZE)
-#define CANVAS_HEIGHT (CANVAS_ROWS * CANVAS_SIZE)
+// #define CANVAS_SIZE 6
+// #define CANVAS_COLS (SFX_TICKS)
+// #define CANVAS_ROWS (16)
+// #define CANVAS_WIDTH (CANVAS_COLS * CANVAS_SIZE)
+// #define CANVAS_HEIGHT (CANVAS_ROWS * CANVAS_SIZE)
 
-#define PIANO_BUTTON_WIDTH 9
-#define PIANO_BUTTON_HEIGHT 16
-#define PIANO_WHITE_BUTTONS 7
-#define PIANO_WIDTH ((PIANO_BUTTON_WIDTH+1)*PIANO_WHITE_BUTTONS)
-#define PIANO_HEIGHT (PIANO_BUTTON_HEIGHT)
+// #define PIANO_BUTTON_WIDTH 9
+// #define PIANO_BUTTON_HEIGHT 16
+// #define PIANO_WHITE_BUTTONS 7
+// #define PIANO_WIDTH ((PIANO_BUTTON_WIDTH+1)*PIANO_WHITE_BUTTONS)
+// #define PIANO_HEIGHT (PIANO_BUTTON_HEIGHT)
 
 #define DEFAULT_CHANNEL 0
+
+enum 
+{
+	SFX_VOLUME_PANEL,
+	SFX_CHORD_PANEL,
+	SFX_PITCH_PANEL,
+};
 
 static inline void drawShadedText(tic_mem* tic, const char* text, s32 x, s32 y, u8 color)
 {
@@ -181,20 +188,20 @@ static void drawTopPanel(Sfx* sfx, s32 x, s32 y)
 	drawStereoSwitch(sfx, x += Gap, y);
 }
 
-static void setLoopStart(Sfx* sfx, s32 delta)
+static void setLoopStart(Sfx* sfx, s32 delta, s32 canvasTab)
 {
 	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	tic_sound_loop* loop = effect->loops + canvasTab;
 
 	loop->start += delta;
 
 	history_add(sfx->history);
 }
 
-static void setLoopSize(Sfx* sfx, s32 delta)
+static void setLoopSize(Sfx* sfx, s32 delta, s32 canvasTab)
 {
 	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	tic_sound_loop* loop = effect->loops + canvasTab;
 
 	loop->size += delta;
 
@@ -203,15 +210,15 @@ static void setLoopSize(Sfx* sfx, s32 delta)
 
 static void drawLoopPanel(Sfx* sfx, s32 x, s32 y)
 {
-	drawShadedText(sfx->tic, "LOOP:", x, y, tic_color_13);
+	// drawShadedText(sfx->tic, "LOOP:", x, y, tic_color_13);
 
-	enum {Gap = 2};
+	// enum {Gap = 2};
 
-	tic_sample* effect = getEffect(sfx);
-	tic_sound_loop* loop = effect->loops + sfx->canvasTab;
+	// tic_sample* effect = getEffect(sfx);
+	// tic_sound_loop* loop = effect->loops + sfx->canvasTab;
 
-	drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->size, setLoopSize);
-	drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->start, setLoopStart);
+	// drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->size, setLoopSize);
+	// drawSwitch(sfx, x, y += Gap + TIC_FONT_HEIGHT, "", loop->start, setLoopStart);
 }
 
 static tic_waveform* getWaveformById(Sfx* sfx, s32 i)
@@ -332,98 +339,112 @@ static void drawWaveButtons(Sfx* sfx, s32 x, s32 y)
 	}
 }
 
-static void drawCanvasTabs(Sfx* sfx, s32 x, s32 y)
+// static void drawCanvasTabs(Sfx* sfx, s32 x, s32 y)
+// {
+// 	static const char* Labels[] = {"WAVE", "VOLUME", "CHORD", "PITCH"};
+
+// 	enum {Height = TIC_FONT_HEIGHT+2};
+
+// 	for(s32 i = 0, sy = y; i < COUNT_OF(Labels); sy += Height, i++)
+// 	{
+// 		s32 size = sfx->tic->api.text(sfx->tic, Labels[i], 0, -TIC_FONT_HEIGHT, tic_color_0, false);
+
+// 		tic_rect rect = {x - size, sy, size, TIC_FONT_HEIGHT};
+
+// 		if(checkMousePos(&rect))
+// 		{
+// 			setCursor(tic_cursor_hand);
+
+// 			if(checkMouseClick(&rect, tic_mouse_left))
+// 			{
+// 				sfx->canvasTab = i;
+// 			}
+// 		}
+
+// 		drawShadedText(sfx->tic, Labels[i], rect.x, rect.y, i == sfx->canvasTab ? tic_color_12 : tic_color_13);
+// 	}
+
+// 	tic_sample* effect = getEffect(sfx);
+
+// 	switch(sfx->canvasTab)
+// 	{
+// 	case SFX_PITCH_PANEL:
+// 		{
+// 			static const char Label[] = "x16";
+// 			enum{Width = (sizeof Label - 1) * TIC_FONT_WIDTH};
+// 			tic_rect rect = {(x - Width)/2, y + Height * 6, Width, TIC_FONT_HEIGHT};
+
+// 			if(checkMousePos(&rect))
+// 			{
+// 				setCursor(tic_cursor_hand);
+
+// 				if(checkMouseClick(&rect, tic_mouse_left))
+// 					effect->pitch16x++;
+// 			}
+
+// 			drawShadedText(sfx->tic, Label, rect.x, rect.y, effect->pitch16x ? tic_color_12 : tic_color_13);
+// 		}
+// 		break;
+// 	case SFX_CHORD_PANEL:
+// 		{
+// 			static const char Label[] = "DOWN";
+// 			enum{Width = (sizeof Label - 1) * TIC_FONT_WIDTH};
+// 			tic_rect rect = {(x - Width)/2, y + Height * 6, Width, TIC_FONT_HEIGHT};
+
+// 			if(checkMousePos(&rect))
+// 			{
+// 				setCursor(tic_cursor_hand);
+
+// 				if(checkMouseClick(&rect, tic_mouse_left))
+// 					effect->reverse++;
+// 			}
+
+// 			drawShadedText(sfx->tic, Label, rect.x, rect.y, effect->reverse ? tic_color_12 : tic_color_13);
+// 		}   
+// 		break;
+// 	default: break;
+// 	}
+// }
+
+static void drawPanelBorder(tic_mem* tic, s32 x, s32 y, s32 w, s32 h, tic_color color)
 {
-	static const char* Labels[] = {"WAVE", "VOLUME", "CHORD", "PITCH"};
+	tic->api.rect(tic, x, y, w, h, color);
 
-	enum {Height = TIC_FONT_HEIGHT+2};
-
-	for(s32 i = 0, sy = y; i < COUNT_OF(Labels); sy += Height, i++)
-	{
-		s32 size = sfx->tic->api.text(sfx->tic, Labels[i], 0, -TIC_FONT_HEIGHT, tic_color_0, false);
-
-		tic_rect rect = {x - size, sy, size, TIC_FONT_HEIGHT};
-
-		if(checkMousePos(&rect))
-		{
-			setCursor(tic_cursor_hand);
-
-			if(checkMouseClick(&rect, tic_mouse_left))
-			{
-				sfx->canvasTab = i;
-			}
-		}
-
-		drawShadedText(sfx->tic, Labels[i], rect.x, rect.y, i == sfx->canvasTab ? tic_color_12 : tic_color_13);
-	}
-
-	tic_sample* effect = getEffect(sfx);
-
-	switch(sfx->canvasTab)
-	{
-	case SFX_PITCH_TAB:
-		{
-			static const char Label[] = "x16";
-			enum{Width = (sizeof Label - 1) * TIC_FONT_WIDTH};
-			tic_rect rect = {(x - Width)/2, y + Height * 6, Width, TIC_FONT_HEIGHT};
-
-			if(checkMousePos(&rect))
-			{
-				setCursor(tic_cursor_hand);
-
-				if(checkMouseClick(&rect, tic_mouse_left))
-					effect->pitch16x++;
-			}
-
-			drawShadedText(sfx->tic, Label, rect.x, rect.y, effect->pitch16x ? tic_color_12 : tic_color_13);
-		}
-		break;
-	case SFX_CHORD_TAB:
-		{
-			static const char Label[] = "DOWN";
-			enum{Width = (sizeof Label - 1) * TIC_FONT_WIDTH};
-			tic_rect rect = {(x - Width)/2, y + Height * 6, Width, TIC_FONT_HEIGHT};
-
-			if(checkMousePos(&rect))
-			{
-				setCursor(tic_cursor_hand);
-
-				if(checkMouseClick(&rect, tic_mouse_left))
-					effect->reverse++;
-			}
-
-			drawShadedText(sfx->tic, Label, rect.x, rect.y, effect->reverse ? tic_color_12 : tic_color_13);
-		}   
-		break;
-	default: break;
-	}
+	tic->api.rect(tic, x, y-1, w, 1, tic_color_15);
+	tic->api.rect(tic, x-1, y, 1, h, tic_color_15);
+	tic->api.rect(tic, x, y+h, w, 1, tic_color_13);
+	tic->api.rect(tic, x+w, y, 1, h, tic_color_13);
 }
 
-static inline void drawLed(tic_mem* tic, s32 x, s32 y)
+static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 {
-	tic->api.rect(tic, x + 2, y + 2, CANVAS_SIZE-3, CANVAS_SIZE-3, tic_color_2);
-	tic->api.pixel(tic, x + 4, y + 2, tic_color_12);
-}
+	tic_mem* tic = sfx->tic;
 
-static void drawCanvas(Sfx* sfx, s32 x, s32 y)
-{
-	sfx->tic->api.rect(sfx->tic, x, y, CANVAS_WIDTH, CANVAS_HEIGHT, tic_color_0);
+	enum 
+	{
+		Cols = SFX_TICKS, Rows = 16, 
+		Gap = 1, LedWidth = 3 + Gap, LedHeight = 1 + Gap,
+		Width = LedWidth * Cols + Gap, 
+		Height = LedHeight * Rows + Gap
+	};
 
-	for(s32 i = 0; i < CANVAS_HEIGHT; i += CANVAS_SIZE)
-		sfx->tic->api.line(sfx->tic, x, y + i, x + CANVAS_WIDTH, y + i, tic_color_14);
+	drawPanelBorder(tic, x, y, Width, Height, tic_color_15);
 
-	for(s32 i = 0; i < CANVAS_WIDTH; i += CANVAS_SIZE)
-		sfx->tic->api.line(sfx->tic, x + i, y, x + i, y + CANVAS_HEIGHT, tic_color_14);
+	for(s32 i = 0; i < Height; i += LedHeight)
+		tic->api.rect(tic, x, y + i, Width, Gap, tic_color_0);
+
+	for(s32 i = 0; i < Width; i += LedWidth)
+		tic->api.rect(tic, x + i, y, Gap, Height, tic_color_0);
 
 	{
-		tic_sfx_pos pos = sfx->tic->api.sfx_pos(sfx->tic, DEFAULT_CHANNEL);
-		s32 tickIndex = *(pos.data + sfx->canvasTab);
+		tic_sfx_pos pos = tic->api.sfx_pos(tic, DEFAULT_CHANNEL);
+		s32 tickIndex = *(pos.data + canvasTab);
 
 		if(tickIndex >= 0)
-			sfx->tic->api.rect(sfx->tic, x + tickIndex * CANVAS_SIZE, y, CANVAS_SIZE + 1, CANVAS_HEIGHT + 1, tic_color_12);
+			tic->api.rect(tic, x + tickIndex * LedWidth, y, LedWidth + 1, Height, tic_color_12);
 	}
 
-	tic_rect rect = {x, y, CANVAS_WIDTH, CANVAS_HEIGHT};
+	tic_rect rect = {x, y, Width - Gap, Height - Gap};
 
 	tic_sample* effect = getEffect(sfx);
 
@@ -434,20 +455,17 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y)
 		s32 mx = getMouseX() - x;
 		s32 my = getMouseY() - y;
 
-		mx -= mx % CANVAS_SIZE;
-		my -= my % CANVAS_SIZE;
-
 		if(checkMouseDown(&rect, tic_mouse_left))
 		{
-			mx /= CANVAS_SIZE;
-			my /= CANVAS_SIZE;
+			mx /= LedWidth;
+			my /= LedHeight;
 
-			switch(sfx->canvasTab)
+			switch(canvasTab)
 			{
-			case SFX_VOLUME_TAB:    effect->data[mx].volume = my; break;
-			case SFX_CHORD_TAB:     effect->data[mx].chord = CANVAS_ROWS - my - 1; break;
-			case SFX_PITCH_TAB:     effect->data[mx].pitch = CANVAS_ROWS / 2 - my - 1; break;
-			case SFX_WAVE_TAB:      effect->data[mx].wave = CANVAS_ROWS - my - 1; break;
+			case SFX_VOLUME_PANEL:    effect->data[mx].volume = my; break;
+			case SFX_CHORD_PANEL:     effect->data[mx].chord = Rows - my - 1; break;
+			case SFX_PITCH_PANEL:     effect->data[mx].pitch = Rows / 2 - my - 1; break;
+			// case SFX_WAVE_TAB:      effect->data[mx].wave = Rows - my - 1; break;
 			default: break;
 			}
 
@@ -455,106 +473,108 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y)
 		}
 	}
 
-	for(s32 i = 0; i < CANVAS_COLS; i++)
+	for(s32 i = 0; i < Cols; i++)
 	{
-		switch(sfx->canvasTab)
+		switch(canvasTab)
 		{
-		case SFX_VOLUME_TAB:
-				for(s32 j = 1, start = CANVAS_HEIGHT - CANVAS_SIZE; j <= CANVAS_ROWS - effect->data[i].volume; j++, start -= CANVAS_SIZE)
-					drawLed(sfx->tic, x + i * CANVAS_SIZE, y + start);
+		case SFX_VOLUME_PANEL:
+			for(s32 j = 1, start = Height - LedHeight, value = Rows - effect->data[i].volume; j <= value; j++, start -= LedHeight)
+				tic->api.rect(tic, x + i * LedWidth + Gap, y + start, LedWidth-Gap, LedHeight-Gap, j == value ? tic_color_9 : tic_color_10);				
 			break;
 
-		case SFX_CHORD_TAB:
-				drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (CANVAS_HEIGHT - (effect->data[i].chord+1)*CANVAS_SIZE));
+		case SFX_CHORD_PANEL:
+			for(s32 j = 1, start = Height - LedHeight, value = effect->data[i].chord + 1; j <= value; j++, start -= LedHeight)
+				tic->api.rect(tic, x + i * LedWidth + Gap, y + start, LedWidth-Gap, LedHeight-Gap, j == value ? tic_color_6 : tic_color_5);
 			break;
 
-		case SFX_PITCH_TAB:
-				for(s32 j = MIN(0, effect->data[i].pitch); j <= MAX(0, effect->data[i].pitch); j++)
-					drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (CANVAS_HEIGHT/2 - (j+1)*CANVAS_SIZE));
+		case SFX_PITCH_PANEL:
+			for(s32 value = effect->data[i].pitch, j = MIN(0, value); j <= MAX(0, value); j++)
+				tic->api.rect(tic, x + i * LedWidth + Gap, y + (Height / 2 - (j + 1) * LedHeight + Gap),
+					LedWidth-Gap, LedHeight-Gap, j == value ? tic_color_3 : tic_color_4);
 			break;
 
-		case SFX_WAVE_TAB:
-				drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (CANVAS_HEIGHT - (effect->data[i].wave+1)*CANVAS_SIZE));
-			break;
+		// case SFX_WAVE_TAB:
+		// 		drawLed(tic, x + i * CANVAS_SIZE, y + (CANVAS_HEIGHT - (effect->data[i].wave+1)*CANVAS_SIZE));
+		// 	break;
 		}
 	}
 
-	{
-		tic_sound_loop* loop = effect->loops + sfx->canvasTab;
-		if(loop->start > 0 || loop->size > 0)
-		{
-			for(s32 i = 0; i < loop->size; i++)
-				sfx->tic->api.rect(sfx->tic, x + (loop->start+i) * CANVAS_SIZE+1, y + CANVAS_HEIGHT - 1, CANVAS_SIZE-1, 2, tic_color_4);
-		}
-	}
+	// {
+	// 	tic_sound_loop* loop = effect->loops + canvasTab;
+	// 	if(loop->start > 0 || loop->size > 0)
+	// 	{
+	// 		for(s32 i = 0; i < loop->size; i++)
+	// 			tic->api.rect(tic, x + (loop->start+i) * CANVAS_SIZE+1, y + CANVAS_HEIGHT - 1, CANVAS_SIZE-1, 2, tic_color_4);
+	// 	}
+	// }
 }
 
-static void drawPiano2(Sfx* sfx, s32 x, s32 y)
-{
-	tic_sample* effect = getEffect(sfx);
+// static void drawPiano2(Sfx* sfx, s32 x, s32 y)
+// {
+// 	tic_sample* effect = getEffect(sfx);
 
-	static const s32 ButtonIndixes[] = {0, 2, 4, 5, 7, 9, 11, 1, 3, -1, 6, 8, 10};
+// 	static const s32 ButtonIndixes[] = {0, 2, 4, 5, 7, 9, 11, 1, 3, -1, 6, 8, 10};
 
-	tic_rect buttons[COUNT_OF(ButtonIndixes)];
+// 	tic_rect buttons[COUNT_OF(ButtonIndixes)];
 
-	for(s32 i = 0; i < COUNT_OF(buttons); i++)
-	{
-		buttons[i] = i < PIANO_WHITE_BUTTONS 
-			? (tic_rect){x + (PIANO_BUTTON_WIDTH+1)*i, y, PIANO_BUTTON_WIDTH + 1, PIANO_BUTTON_HEIGHT}
-			: (tic_rect){x + (7 + 3) * (i - PIANO_WHITE_BUTTONS) + 6, y, 7, 8};
-	}
+// 	for(s32 i = 0; i < COUNT_OF(buttons); i++)
+// 	{
+// 		buttons[i] = i < PIANO_WHITE_BUTTONS 
+// 			? (tic_rect){x + (PIANO_BUTTON_WIDTH+1)*i, y, PIANO_BUTTON_WIDTH + 1, PIANO_BUTTON_HEIGHT}
+// 			: (tic_rect){x + (7 + 3) * (i - PIANO_WHITE_BUTTONS) + 6, y, 7, 8};
+// 	}
 
-	tic_rect rect = {x, y, PIANO_WIDTH, PIANO_HEIGHT};
+// 	tic_rect rect = {x, y, PIANO_WIDTH, PIANO_HEIGHT};
 
-	if(checkMousePos(&rect))
-	{
-		setCursor(tic_cursor_hand);
+// 	if(checkMousePos(&rect))
+// 	{
+// 		setCursor(tic_cursor_hand);
 
-		static const char* Tooltips[] = {"C [z]", "C# [s]", "D [x]", "D# [d]", "E [c]", "F [v]", "F# [g]", "G [b]", "G# [h]", "A [n]", "A# [j]", "B [m]" };
+// 		static const char* Tooltips[] = {"C [z]", "C# [s]", "D [x]", "D# [d]", "E [c]", "F [v]", "F# [g]", "G [b]", "G# [h]", "A [n]", "A# [j]", "B [m]" };
 
-		for(s32 i = COUNT_OF(buttons) - 1; i >= 0; i--)
-		{
-			tic_rect* rect = buttons + i;
+// 		for(s32 i = COUNT_OF(buttons) - 1; i >= 0; i--)
+// 		{
+// 			tic_rect* rect = buttons + i;
 
-			if(checkMousePos(rect))
-				if(ButtonIndixes[i] >= 0)
-				{
-					showTooltip(Tooltips[ButtonIndixes[i]]);
-					break;
-				}
-		}
+// 			if(checkMousePos(rect))
+// 				if(ButtonIndixes[i] >= 0)
+// 				{
+// 					showTooltip(Tooltips[ButtonIndixes[i]]);
+// 					break;
+// 				}
+// 		}
 
-		if(checkMouseDown(&rect, tic_mouse_left))
-		{
-			for(s32 i = COUNT_OF(buttons) - 1; i >= 0; i--)
-			{
-				tic_rect* rect = buttons + i;
-				s32 index = ButtonIndixes[i];
+// 		if(checkMouseDown(&rect, tic_mouse_left))
+// 		{
+// 			for(s32 i = COUNT_OF(buttons) - 1; i >= 0; i--)
+// 			{
+// 				tic_rect* rect = buttons + i;
+// 				s32 index = ButtonIndixes[i];
 
-				if(index >= 0)
-				{
-					if(checkMousePos(rect))
-					{
-						effect->note = index;
-						sfx->play.active = true;
-						break;
-					}
-				}
-			}           
-		}
-	}
+// 				if(index >= 0)
+// 				{
+// 					if(checkMousePos(rect))
+// 					{
+// 						effect->note = index;
+// 						sfx->play.active = true;
+// 						break;
+// 					}
+// 				}
+// 			}           
+// 		}
+// 	}
 
-	for(s32 i = 0; i < COUNT_OF(buttons); i++)
-	{
-		tic_rect* rect = buttons + i;
-		bool white = i < PIANO_WHITE_BUTTONS;
-		s32 index = ButtonIndixes[i];
+// 	for(s32 i = 0; i < COUNT_OF(buttons); i++)
+// 	{
+// 		tic_rect* rect = buttons + i;
+// 		bool white = i < PIANO_WHITE_BUTTONS;
+// 		s32 index = ButtonIndixes[i];
 
-		if(index >= 0)
-			sfx->tic->api.rect(sfx->tic, rect->x, rect->y, rect->w - (white ? 1 : 0), rect->h, 
-				(sfx->play.active && effect->note == index ? tic_color_2 : white ? tic_color_12 : tic_color_0));
-	}
-}
+// 		if(index >= 0)
+// 			sfx->tic->api.rect(sfx->tic, rect->x, rect->y, rect->w - (white ? 1 : 0), rect->h, 
+// 				(sfx->play.active && effect->note == index ? tic_color_2 : white ? tic_color_12 : tic_color_0));
+// 	}
+// }
 
 static void drawOctavePanel(Sfx* sfx, s32 x, s32 y)
 {
@@ -868,116 +888,116 @@ static void envelopesTick(Sfx* sfx)
 	sfx->tic->api.clear(sfx->tic, tic_color_14);
 
 	enum{ Gap = 3, Start = 40};
-	drawPiano2(sfx, Start, TIC80_HEIGHT - PIANO_HEIGHT - Gap);
+	// drawPiano2(sfx, Start, TIC80_HEIGHT - PIANO_HEIGHT - Gap);
 	drawTopPanel(sfx, Start, TOOLBAR_SIZE + Gap);
 
 	drawSfxToolbar(sfx);
 	drawToolbar(sfx->tic, false);
 
-	drawCanvasTabs(sfx, Start-Gap, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT+2);
-	if(sfx->canvasTab == SFX_WAVE_TAB)
-		drawWaveButtons(sfx, Start + CANVAS_WIDTH + Gap-1, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT+2);
+	// drawCanvasTabs(sfx, Start-Gap, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT+2);
+	// if(sfx->canvasTab == SFX_WAVE_TAB)
+	// 	drawWaveButtons(sfx, Start + CANVAS_WIDTH + Gap-1, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT+2);
 
 	drawLoopPanel(sfx, Gap, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT+92);
-	drawCanvas(sfx, Start-1, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT + 1);
-	drawOctavePanel(sfx, Start + Gap + PIANO_WIDTH + Gap-1, TIC80_HEIGHT - TIC_FONT_HEIGHT - (PIANO_HEIGHT - TIC_FONT_HEIGHT)/2 - Gap);
+	// drawCanvas(sfx, Start-1, TOOLBAR_SIZE + Gap + TIC_FONT_HEIGHT + 1);
+	// drawOctavePanel(sfx, Start + Gap + PIANO_WIDTH + Gap-1, TIC80_HEIGHT - TIC_FONT_HEIGHT - (PIANO_HEIGHT - TIC_FONT_HEIGHT)/2 - Gap);
 }
 
 static void drawWaveformBar(Sfx* sfx, s32 x, s32 y)
 {
-	enum 
-	{
-		Border = 2,
-		Scale = 2,
-		Width = WAVE_VALUES/Scale + Border, 
-		Height = CANVAS_HEIGHT/CANVAS_SIZE/Scale + Border,
-		Gap = 3,
-		Rows = 2,
-		Cols = WAVES_COUNT/Rows,
-	};
+	// enum 
+	// {
+	// 	Border = 2,
+	// 	Scale = 2,
+	// 	Width = WAVE_VALUES/Scale + Border, 
+	// 	Height = CANVAS_HEIGHT/CANVAS_SIZE/Scale + Border,
+	// 	Gap = 3,
+	// 	Rows = 2,
+	// 	Cols = WAVES_COUNT/Rows,
+	// };
 
-	for(s32 i = 0; i < WAVES_COUNT; i++)
-	{
-		tic_rect rect = {x + (i%Cols)*(Width+Gap), y + (i/Cols)*(Height+Gap), Width, Height};
+	// for(s32 i = 0; i < WAVES_COUNT; i++)
+	// {
+	// 	tic_rect rect = {x + (i%Cols)*(Width+Gap), y + (i/Cols)*(Height+Gap), Width, Height};
 
-		if(checkMousePos(&rect))
-		{
-			setCursor(tic_cursor_hand);
+	// 	if(checkMousePos(&rect))
+	// 	{
+	// 		setCursor(tic_cursor_hand);
 
-			if(checkMouseClick(&rect, tic_mouse_left))
-				sfx->waveform.index = i;
-		}
+	// 		if(checkMouseClick(&rect, tic_mouse_left))
+	// 			sfx->waveform.index = i;
+	// 	}
 
-		bool active = false;
-		if(sfx->play.active)
-		{
-			tic_sfx_pos pos = sfx->tic->api.sfx_pos(sfx->tic, DEFAULT_CHANNEL);
+	// 	bool active = false;
+	// 	if(sfx->play.active)
+	// 	{
+	// 		tic_sfx_pos pos = sfx->tic->api.sfx_pos(sfx->tic, DEFAULT_CHANNEL);
 
-			if(pos.wave >= 0 && getEffect(sfx)->data[pos.wave].wave == i)
-				active = true;
-		}
+	// 		if(pos.wave >= 0 && getEffect(sfx)->data[pos.wave].wave == i)
+	// 			active = true;
+	// 	}
 
-		sfx->tic->api.rect(sfx->tic, rect.x, rect.y, rect.w, rect.h, (active ? tic_color_2 : tic_color_12));
+	// 	sfx->tic->api.rect(sfx->tic, rect.x, rect.y, rect.w, rect.h, (active ? tic_color_2 : tic_color_12));
 
-		if(sfx->waveform.index == i)
-			sfx->tic->api.rect_border(sfx->tic, rect.x-2, rect.y-2, rect.w+4, rect.h+4, tic_color_12);
+	// 	if(sfx->waveform.index == i)
+	// 		sfx->tic->api.rect_border(sfx->tic, rect.x-2, rect.y-2, rect.w+4, rect.h+4, tic_color_12);
 
-		{
-			tic_waveform* wave = getWaveformById(sfx, i);
+	// 	{
+	// 		tic_waveform* wave = getWaveformById(sfx, i);
 
-			for(s32 i = 0; i < WAVE_VALUES/Scale; i++)
-			{
-				s32 value = tic_tool_peek4(wave->data, i*Scale)/Scale;
-				sfx->tic->api.pixel(sfx->tic, rect.x + i+1, rect.y + Height - value - 2, tic_color_0);
-			}
-		}
-	}
+	// 		for(s32 i = 0; i < WAVE_VALUES/Scale; i++)
+	// 		{
+	// 			s32 value = tic_tool_peek4(wave->data, i*Scale)/Scale;
+	// 			sfx->tic->api.pixel(sfx->tic, rect.x + i+1, rect.y + Height - value - 2, tic_color_0);
+	// 		}
+	// 	}
+	// }
 }
 
 static void drawWaveformCanvas(Sfx* sfx, s32 x, s32 y)
 {
-	enum {Rows = CANVAS_ROWS, Width = WAVE_VALUES * CANVAS_SIZE, Height = CANVAS_HEIGHT};
+	// enum {Rows = CANVAS_ROWS, Width = WAVE_VALUES * CANVAS_SIZE, Height = CANVAS_HEIGHT};
 
-	tic_rect rect = {x, y, Width, Height};
+	// tic_rect rect = {x, y, Width, Height};
 
-	sfx->tic->api.rect(sfx->tic, rect.x, rect.y, rect.w, rect.h, tic_color_0);
+	// sfx->tic->api.rect(sfx->tic, rect.x, rect.y, rect.w, rect.h, tic_color_0);
 
-	for(s32 i = 0; i < Height; i += CANVAS_SIZE)
-		sfx->tic->api.line(sfx->tic, rect.x, rect.y + i, rect.x + Width, rect.y + i, tic_color_14);
+	// for(s32 i = 0; i < Height; i += CANVAS_SIZE)
+	// 	sfx->tic->api.line(sfx->tic, rect.x, rect.y + i, rect.x + Width, rect.y + i, tic_color_14);
 
-	for(s32 i = 0; i < Width; i += CANVAS_SIZE)
-		sfx->tic->api.line(sfx->tic, rect.x + i, rect.y, rect.x + i, rect.y + Width, tic_color_14);
+	// for(s32 i = 0; i < Width; i += CANVAS_SIZE)
+	// 	sfx->tic->api.line(sfx->tic, rect.x + i, rect.y, rect.x + i, rect.y + Width, tic_color_14);
 
-	if(checkMousePos(&rect))
-	{
-		setCursor(tic_cursor_hand);
+	// if(checkMousePos(&rect))
+	// {
+	// 	setCursor(tic_cursor_hand);
 
-		if(checkMouseDown(&rect, tic_mouse_left))
-		{
-			s32 mx = getMouseX() - x;
-			s32 my = getMouseY() - y;
+	// 	if(checkMouseDown(&rect, tic_mouse_left))
+	// 	{
+	// 		s32 mx = getMouseX() - x;
+	// 		s32 my = getMouseY() - y;
 
-			mx -= mx % CANVAS_SIZE;
-			my -= my % CANVAS_SIZE;
+	// 		mx -= mx % CANVAS_SIZE;
+	// 		my -= my % CANVAS_SIZE;
 
-			mx /= CANVAS_SIZE;
-			my /= CANVAS_SIZE;
+	// 		mx /= CANVAS_SIZE;
+	// 		my /= CANVAS_SIZE;
 
-			tic_waveform* wave = getWaveform(sfx);
+	// 		tic_waveform* wave = getWaveform(sfx);
 
-			tic_tool_poke4(wave->data, mx, Rows - my - 1);
+	// 		tic_tool_poke4(wave->data, mx, Rows - my - 1);
 
-			history_add(sfx->history);
-		}
-	}
+	// 		history_add(sfx->history);
+	// 	}
+	// }
 
-	tic_waveform* wave = getWaveform(sfx);
+	// tic_waveform* wave = getWaveform(sfx);
 
-	for(s32 i = 0; i < WAVE_VALUES; i++)
-	{
-		s32 value = tic_tool_peek4(wave->data, i);
-		drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (Height - (value+1)*CANVAS_SIZE));
-	}
+	// for(s32 i = 0; i < WAVE_VALUES; i++)
+	// {
+	// 	// s32 value = tic_tool_peek4(wave->data, i);
+	// 	// drawLed(sfx->tic, x + i * CANVAS_SIZE, y + (Height - (value+1)*CANVAS_SIZE));
+	// }
 }
 
 static void waveformTick(Sfx* sfx)
@@ -997,16 +1017,6 @@ static void waveformTick(Sfx* sfx)
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-
-static void drawPanelBorder(tic_mem* tic, s32 x, s32 y, s32 w, s32 h, tic_color color)
-{
-	tic->api.rect(tic, x, y, w, h, color);
-
-	tic->api.rect(tic, x, y-1, w, 1, tic_color_15);
-	tic->api.rect(tic, x-1, y, 1, h, tic_color_15);
-	tic->api.rect(tic, x, y+h, w, 1, tic_color_13);
-	tic->api.rect(tic, x+w, y, 1, h, tic_color_13);
-}
 
 static void drawWaves(Sfx* sfx, s32 x, s32 y)
 {
@@ -1110,46 +1120,6 @@ static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 	drawWaves(sfx, x + 8, y + 43);	
 }
 
-static void drawEditorPanelBG(Sfx* sfx, s32 x, s32 y)
-{
-	tic_mem* tic = sfx->tic;
-
-	enum 
-	{
-		Cols = SFX_TICKS, Rows = 16, 
-		LedWidth = 3, LedHeight = 1, Gap = 1, 
-		Width = (LedWidth + Gap) * Cols + Gap, 
-		Height = (LedHeight + Gap) * Rows + Gap
-	};
-
-	drawPanelBorder(tic, x, y, Width, Height, tic_color_0);
-
-	for(s32 j = Gap; j < Height; j += LedHeight + Gap)
-		for(s32 i = Gap; i < Width; i += LedWidth + Gap)
-			tic->api.rect(tic, x + i, y + j, LedWidth, LedHeight, tic_color_15);
-}
-
-static void drawVolumePanel(Sfx* sfx, s32 x, s32 y)
-{
-	tic_mem* tic = sfx->tic;
-
-	drawEditorPanelBG(sfx, x, y);
-}
-
-static void drawArpeggioPanel(Sfx* sfx, s32 x, s32 y)
-{
-	tic_mem* tic = sfx->tic;
-
-	drawEditorPanelBG(sfx, x, y);
-}
-
-static void drawPitchPanel(Sfx* sfx, s32 x, s32 y)
-{
-	tic_mem* tic = sfx->tic;
-
-	drawEditorPanelBG(sfx, x, y);
-}
-
 static void drawPianoOctave(Sfx* sfx, s32 x, s32 y)
 {
 	tic_mem* tic = sfx->tic;
@@ -1201,9 +1171,10 @@ static void tick(Sfx* sfx)
 	tic->api.clear(tic, tic_color_14);
 
 	drawWavePanel(sfx, 10, 21);
-	drawVolumePanel(sfx, 101, 13);
-	drawArpeggioPanel(sfx, 101, 50);
-	drawPitchPanel(sfx, 101, 87);
+
+	drawCanvas(sfx, 101, 13, SFX_VOLUME_PANEL);
+	drawCanvas(sfx, 101, 50, SFX_CHORD_PANEL);
+	drawCanvas(sfx, 101, 87, SFX_PITCH_PANEL);
 
 	drawPiano(sfx, 5, 127);
 
@@ -1267,7 +1238,7 @@ void initSfx(Sfx* sfx, tic_mem* tic, tic_sfx* src)
 		{
 			.index = 0,
 		},
-		.canvasTab = SFX_WAVE_TAB,
+		// .canvasTab = SFX_VOLUME_PANEL,
 		.tab = SFX_ENVELOPES_TAB,
 		.history = history_create(src, sizeof(tic_sfx)),
 		.event = onStudioEvent,
