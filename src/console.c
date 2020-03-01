@@ -2319,7 +2319,7 @@ static void onConsoleRamCommand(Console* console, const char* param)
 		{offsetof(tic_ram, input.keyboard),				"KEYBOARD"},
 		{offsetof(tic_ram, unknown), 					"..."},
 		{offsetof(tic_ram, registers), 					"SOUND REGISTERS"},
-		{offsetof(tic_ram, sfx.waveform), 				"WAVEFORMS"},
+		{offsetof(tic_ram, sfx.waveforms), 				"WAVEFORMS"},
 		{offsetof(tic_ram, sfx.samples),				"SFX"},
 		{offsetof(tic_ram, music.patterns.data), 		"MUSIC PATTERNS"},
 		{offsetof(tic_ram, music.tracks.data), 			"MUSIC TRACKS"},

@@ -210,7 +210,7 @@ typedef struct
 
 typedef struct
 {
-	tic_waveform envelopes[WAVES_COUNT];
+	tic_waveform items[WAVES_COUNT];
 } tic_waveforms;
 
 #define MUSIC_CMD_LIST(macro) 																	\
@@ -277,7 +277,7 @@ typedef struct
 
 typedef struct
 {
-	tic_waveforms waveform;
+	tic_waveforms waveforms;
 	tic_samples samples;
 }tic_sfx;
 

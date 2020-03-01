@@ -216,7 +216,7 @@ static void drawLoopPanel(Sfx* sfx, s32 x, s32 y)
 
 static tic_waveform* getWaveformById(Sfx* sfx, s32 i)
 {
-	return &sfx->src->waveform.envelopes[i];
+	return &sfx->src->waveforms.items[i];
 }
 
 static tic_waveform* getWaveform(Sfx* sfx)
@@ -1012,14 +1012,45 @@ static void drawWaves(Sfx* sfx, s32 x, s32 y)
 {
 	tic_mem* tic = sfx->tic;
 
-	enum{Width = 10, Height = 6, MarginRight = 6, MarginBottom = 4, Cols = 4, Rows = 4};
+	enum{Width = 10, Height = 6, MarginRight = 6, MarginBottom = 4, Cols = 4, Rows = 4, Scale = 4};
 
 	for(s32 i = 0; i < WAVES_COUNT; i++)
 	{
 		s32 xi = i % Cols;
 		s32 yi = i / Cols;
 
-		drawPanelBorder(tic, x + xi * (Width + MarginRight), y + yi * (Height + MarginBottom), Width, Height, tic_color_0);
+		tic_rect rect = {x + xi * (Width + MarginRight), y + yi * (Height + MarginBottom), Width, Height};
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+
+			// if(checkMouseClick(&rect, tic_mouse_left))
+			// ...
+		}
+
+		bool active = sfx->waveform.index == i;
+
+		drawPanelBorder(tic, rect.x, rect.y, rect.w, rect.h, active ? tic_color_5 : tic_color_0);
+
+		// draw tiny wave previews
+		{
+			tic_waveform* wave = getWaveformById(sfx, i);
+
+			for(s32 i = 0; i < WAVE_VALUES/Scale; i++)
+			{
+				s32 value = tic_tool_peek4(wave->data, i*Scale)/Scale;
+				tic->api.pixel(tic, rect.x + i+1, rect.y + Height - value - 2, active ? tic_color_7 : tic_color_12);
+			}
+
+			// draw flare
+			if(active)
+			{
+				tic->api.rect(tic, rect.x + rect.w - 2, rect.y, 2, 1, tic_color_12);
+				tic->api.pixel(tic, rect.x + rect.w - 1, rect.y + 1, tic_color_12);
+			}
+		}
+
 	}
 }
 
@@ -1045,7 +1076,36 @@ static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 	for(const Edge* edge = Edges; edge < Edges + COUNT_OF(Edges); edge++)
 		tic->api.line(tic, x + edge->x, y + edge->y, x + edge->x1, y + edge->y1, edge->color);
 
-	drawPanelBorder(tic, x + 4, y + 4, 66, 34, tic_color_5);
+	// draw current wave shape
+	{
+		enum {Scale = 2, Offset = 1};
+
+		tic_rect rect = {x + 4, y + 4, 66, 34};
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+
+			// if(checkMouseClick(&rect, tic_mouse_left))
+			// ...
+		}		
+
+		drawPanelBorder(tic, rect.x, rect.y, rect.w, rect.h, tic_color_5);
+
+		tic_waveform* wave = getWaveform(sfx);
+
+		for(s32 i = 0; i < WAVE_VALUES; i++)
+		{
+			s32 value = tic_tool_peek4(wave->data, i);
+			tic->api.rect(tic, rect.x + i*Scale + Offset, rect.y + rect.h - value*Scale - Offset*3, Scale, Scale, tic_color_7);
+		}
+
+		// draw flare
+		{
+			tic->api.rect(tic, rect.x + 60, rect.y + 3, 4, 1, tic_color_12);
+			tic->api.rect(tic, rect.x + 63, rect.y + 3, 1, 3, tic_color_12);			
+		}
+	}
 
 	drawWaves(sfx, x + 8, y + 43);	
 }
