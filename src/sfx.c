@@ -23,18 +23,6 @@
 #include "sfx.h"
 #include "history.h"
 
-// #define CANVAS_SIZE 6
-// #define CANVAS_COLS (SFX_TICKS)
-// #define CANVAS_ROWS (16)
-// #define CANVAS_WIDTH (CANVAS_COLS * CANVAS_SIZE)
-// #define CANVAS_HEIGHT (CANVAS_ROWS * CANVAS_SIZE)
-
-// #define PIANO_BUTTON_WIDTH 9
-// #define PIANO_BUTTON_HEIGHT 16
-// #define PIANO_WHITE_BUTTONS 7
-// #define PIANO_WIDTH ((PIANO_BUTTON_WIDTH+1)*PIANO_WHITE_BUTTONS)
-// #define PIANO_HEIGHT (PIANO_BUTTON_HEIGHT)
-
 #define DEFAULT_CHANNEL 0
 
 enum 
@@ -1142,30 +1130,82 @@ static void drawWavePanel(Sfx* sfx, s32 x, s32 y)
 	drawWaves(sfx, x + 8, y + 43);
 }
 
-static void drawPianoOctave(Sfx* sfx, s32 x, s32 y)
+static void drawPianoOctave(Sfx* sfx, s32 x, s32 y, s32 octave)
 {
 	tic_mem* tic = sfx->tic;
 
 	enum 
 	{
-		WhiteWidth = 3, WhiteHeight = 8, WhiteCount = 7,
-		BlackWidth = 3, BlackHeight = 4, BlackCount = 6, BlackSkip = 2,
-		Gap = 1, 
-		Width = WhiteCount * (WhiteWidth + Gap) - Gap
+		Gap = 1, WhiteShadow = 1,
+		WhiteWidth = 3, WhiteHeight = 8, WhiteCount = 7, WhiteWidthGap = WhiteWidth + Gap,
+		BlackWidth = 3, BlackHeight = 4, BlackCount = 6, 
+		BlackOffset = WhiteWidth - (BlackWidth - Gap) / 2,
+		Width = WhiteCount * WhiteWidthGap - Gap,
+		Height = WhiteHeight
 	};
 
-	for(s32 i = 0; i < WhiteCount; i++)
-		tic->api.rect(tic, x + i * (WhiteWidth + Gap), y, WhiteWidth, WhiteHeight, tic_color_12);
+	tic_rect rect = {x, y, Width, Height};
 
-	tic->api.rect(tic, x, y + (WhiteHeight - 1), Width, 1, tic_color_0);
-
-	for(s32 i = 0; i < BlackCount; i++)
+	typedef struct{s32 note; tic_rect rect; bool white;} PianoBtn;
+	static const PianoBtn Buttons[] = 
 	{
-		tic->api.rect(tic, x + i * (BlackWidth + Gap) + 3, y, Gap, WhiteHeight, tic_color_15);
+		{0, WhiteWidthGap * 0, 0, WhiteWidth, WhiteHeight, true},
+		{2, WhiteWidthGap * 1, 0, WhiteWidth, WhiteHeight, true},
+		{4, WhiteWidthGap * 2, 0, WhiteWidth, WhiteHeight, true},
+		{5, WhiteWidthGap * 3, 0, WhiteWidth, WhiteHeight, true},
+		{7, WhiteWidthGap * 4, 0, WhiteWidth, WhiteHeight, true},
+		{9, WhiteWidthGap * 5, 0, WhiteWidth, WhiteHeight, true},
+		{11, WhiteWidthGap * 6, 0, WhiteWidth, WhiteHeight, true},
 
-		if(i == BlackSkip) continue;
+		{1, WhiteWidthGap * 0 + BlackOffset, 0, BlackWidth, BlackHeight, false},
+		{3, WhiteWidthGap * 1 + BlackOffset, 0, BlackWidth, BlackHeight, false},
+		{6, WhiteWidthGap * 3 + BlackOffset, 0, BlackWidth, BlackHeight, false},
+		{8, WhiteWidthGap * 4 + BlackOffset, 0, BlackWidth, BlackHeight, false},
+		{10, WhiteWidthGap * 5 + BlackOffset, 0, BlackWidth, BlackHeight, false},
+	};
 
-		tic->api.rect(tic, x + i * (BlackWidth + Gap) + 2, y, BlackWidth, BlackHeight, tic_color_0);
+	tic_sample* effect = getEffect(sfx);
+
+	if(checkMousePos(&rect))
+	{
+		for(s32 i = COUNT_OF(Buttons)-1; i >= 0; i--)
+		{
+			const PianoBtn* btn = Buttons + i;
+			tic_rect btnRect = btn->rect;
+			btnRect.x += x;
+			btnRect.y += y;
+
+			if(checkMousePos(&btnRect))
+			{
+				setCursor(tic_cursor_hand);
+
+				if(checkMouseDown(&rect, tic_mouse_left))
+				{
+					effect->note = btn->note;
+					effect->octave = octave;
+					sfx->play.active = true;
+
+					history_add(sfx->history);
+					break;
+				}
+			}
+		}
+	}
+
+
+	bool active = sfx->play.active && effect->octave == octave;
+
+	tic->api.rect(tic, rect.x, rect.y, rect.w, rect.h, tic_color_15);
+
+	for(s32 i = 0; i < COUNT_OF(Buttons); i++)
+	{
+		const PianoBtn* btn = Buttons + i;
+		const tic_rect* rect = &btn->rect;
+		tic->api.rect(tic, x + rect->x, y + rect->y, rect->w, rect->h, 
+			active && effect->note == btn->note ? tic_color_2 : btn->white ? tic_color_12 : tic_color_0);
+
+		if(btn->white)
+			tic->api.rect(tic, x + rect->x, y + (WhiteHeight - WhiteShadow), WhiteWidth, WhiteShadow, tic_color_0);
 	}
 }
 
@@ -1177,7 +1217,7 @@ static void drawPiano(Sfx* sfx, s32 x, s32 y)
 
 	for(s32 i = 0; i < OCTAVES; i++)
 	{
-		drawPianoOctave(sfx, x + Width*i, y);
+		drawPianoOctave(sfx, x + Width*i, y, i);
 	}
 }
 
