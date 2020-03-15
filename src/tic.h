@@ -180,7 +180,7 @@ typedef struct
 	{
 		u8 octave:3;
 		u8 pitch16x:1; // pitch factor
-		s8 speed:3;
+		s8 speed:SFX_SPEED_BITS;
 		u8 reverse:1; // chord reverse
 		u8 note:4;
 		u8 stereo_left:1;
