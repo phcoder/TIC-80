@@ -161,6 +161,51 @@ static void drawCanvasLeds(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 		tic->api.rect_border(tic, border.x, border.y, border.w, border.h, tic_color_12);
 }
 
+static void drawVolumeStereo(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum {Width = TIC_ALTFONT_WIDTH-1, Height = TIC_FONT_HEIGHT};
+
+	tic_sample* effect = getEffect(sfx);
+
+	{
+		tic_rect rect = {x, y, Width, Height};
+
+		bool hover = false;
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+
+			showTooltip("left stereo");
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+				effect->stereo_left = ~effect->stereo_left;
+		}
+
+		tic->api.text(tic, "L", rect.x, rect.y, effect->stereo_left ? hover ? tic_color_14 : tic_color_15 : tic_color_5, true);
+	}
+
+	{
+		tic_rect rect = {x + 4, y, Width, Height};
+
+		bool hover = false;
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+
+			showTooltip("right stereo");
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+				effect->stereo_right = ~effect->stereo_right;
+		}
+
+		tic->api.text(tic, "R", rect.x, rect.y, effect->stereo_right ? hover ? tic_color_14 : tic_color_15 : tic_color_5, true);
+	}
+}
+
 static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 {
 	tic_mem* tic = sfx->tic;
@@ -174,21 +219,14 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 
 	static const char* Labels[] = {"", "VOLUME", "ARPEGG", "PITCH"};
 
-	// switch(canvasTab)
-	// {
-	// case SFX_VOLUME_PANEL:
-	// 	label = "VOLUME";
-	// 	break;
-
-	// case SFX_CHORD_PANEL:
-	// 	break;
-
-	// case SFX_PITCH_PANEL:
-	// 	break;
-	// }
+	switch(canvasTab)
+	{
+	case SFX_VOLUME_PANEL:	drawVolumeStereo(sfx, x + 2, y + 9); break;
+	case SFX_CHORD_PANEL:	break;
+	case SFX_PITCH_PANEL:	break;
+	}
 
 	tic->api.text(tic, Labels[canvasTab], x + 2, y + 2, tic_color_15, true);
-
 	tic->api.text(tic, "LOOP:", x + 2, y + 20, tic_color_15, true);
 
 	static const u8 LeftArrow[] =
