@@ -27,6 +27,7 @@
 
 enum 
 {
+	SFX_WAVE_PANEL,
 	SFX_VOLUME_PANEL,
 	SFX_CHORD_PANEL,
 	SFX_PITCH_PANEL,
@@ -36,26 +37,6 @@ static tic_sample* getEffect(Sfx* sfx)
 {
 	return sfx->src->samples.data + sfx->index;
 }
-
-// static void setLoopStart(Sfx* sfx, s32 delta, s32 canvasTab)
-// {
-// 	tic_sample* effect = getEffect(sfx);
-// 	tic_sound_loop* loop = effect->loops + canvasTab;
-
-// 	loop->start += delta;
-
-// 	history_add(sfx->history);
-// }
-
-// static void setLoopSize(Sfx* sfx, s32 delta, s32 canvasTab)
-// {
-// 	tic_sample* effect = getEffect(sfx);
-// 	tic_sound_loop* loop = effect->loops + canvasTab;
-
-// 	loop->size += delta;
-
-// 	history_add(sfx->history);
-// }
 
 static tic_waveform* getWaveformById(Sfx* sfx, s32 i)
 {
@@ -72,7 +53,7 @@ static void drawPanelBorder(tic_mem* tic, s32 x, s32 y, s32 w, s32 h, tic_color 
 	tic->api.rect(tic, x+w, y, 1, h, tic_color_13);
 }
 
-static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
+static void drawCanvasLeds(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 {
 	tic_mem* tic = sfx->tic;
 
@@ -84,7 +65,7 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 		Height = LedHeight * Rows + Gap
 	};
 
-	drawPanelBorder(tic, x, y, Width, Height, tic_color_15);
+	tic->api.rect(tic, x, y, Width, Height, tic_color_15);
 
 	for(s32 i = 0; i < Height; i += LedHeight)
 		tic->api.rect(tic, x, y + i, Width, Gap, tic_color_0);
@@ -103,6 +84,7 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 	tic_rect rect = {x, y, Width - Gap, Height - Gap};
 
 	tic_sample* effect = getEffect(sfx);
+	tic_rect border = {-1};
 
 	if(checkMousePos(&rect))
 	{
@@ -110,17 +92,32 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 
 		s32 mx = getMouseX() - x;
 		s32 my = getMouseY() - y;
+		mx /= LedWidth;
+		s32 vy = my /= LedHeight;
+		border = (tic_rect){x + mx * LedWidth + Gap, y + my * LedHeight + Gap, LedWidth - Gap, LedHeight - Gap};
+
+		switch(canvasTab)
+		{
+		case SFX_VOLUME_PANEL: vy = MAX_VOLUME - my; break;
+		case SFX_CHORD_PANEL:  vy = my = Rows - my - 1; break;
+		case SFX_PITCH_PANEL:  vy = my = Rows / 2 - my - 1; break;
+		default: break;
+		}
+
+		{
+			static const char Format[] = "[x:%02i y:%02i]";
+			char buf[sizeof Format];
+			sprintf(buf, Format, mx, vy);
+			showTooltip(buf);
+		}
 
 		if(checkMouseDown(&rect, tic_mouse_left))
 		{
-			mx /= LedWidth;
-			my /= LedHeight;
-
 			switch(canvasTab)
 			{
-			case SFX_VOLUME_PANEL:    effect->data[mx].volume = my; break;
-			case SFX_CHORD_PANEL:     effect->data[mx].chord = Rows - my - 1; break;
-			case SFX_PITCH_PANEL:     effect->data[mx].pitch = Rows / 2 - my - 1; break;
+			case SFX_VOLUME_PANEL: effect->data[mx].volume = my; break;
+			case SFX_CHORD_PANEL:  effect->data[mx].chord = my; break;
+			case SFX_PITCH_PANEL:  effect->data[mx].pitch = my; break;
 			default: break;
 			}
 
@@ -150,14 +147,178 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 		}
 	}
 
+	{
+		tic_sound_loop* loop = effect->loops + canvasTab;
+		if(loop->size > 0)
+			for(s32 r = 0; r < Rows; r++)
+			{
+				tic->api.rect(tic, x + loop->start * LedWidth + 2, y + Gap + r * LedHeight, 1, 1, tic_color_12);
+				tic->api.rect(tic, x + (loop->start + loop->size-1) * LedWidth + 2, y + Gap + r * LedHeight, 1, 1, tic_color_12);	
+			}
+	}
+
+	if(border.x >= 0)
+		tic->api.rect_border(tic, border.x, border.y, border.w, border.h, tic_color_12);
+}
+
+static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
+{
+	tic_mem* tic = sfx->tic;
+
+	enum 
+	{
+		Width = 147, Height = 33
+	};
+
+	drawPanelBorder(tic, x, y, Width, Height, tic_color_0);
+
+	static const char* Labels[] = {"", "VOLUME", "ARPEGG", "PITCH"};
+
+	// switch(canvasTab)
 	// {
-	// 	tic_sound_loop* loop = effect->loops + canvasTab;
-	// 	if(loop->start > 0 || loop->size > 0)
-	// 	{
-	// 		for(s32 i = 0; i < loop->size; i++)
-	// 			tic->api.rect(tic, x + (loop->start+i) * CANVAS_SIZE+1, y + CANVAS_HEIGHT - 1, CANVAS_SIZE-1, 2, tic_color_4);
-	// 	}
+	// case SFX_VOLUME_PANEL:
+	// 	label = "VOLUME";
+	// 	break;
+
+	// case SFX_CHORD_PANEL:
+	// 	break;
+
+	// case SFX_PITCH_PANEL:
+	// 	break;
 	// }
+
+	tic->api.text(tic, Labels[canvasTab], x + 2, y + 2, tic_color_15, true);
+
+	tic->api.text(tic, "LOOP:", x + 2, y + 20, tic_color_15, true);
+
+	static const u8 LeftArrow[] =
+	{
+		0b00100000,
+		0b01100000,
+		0b11100000,
+		0b01100000,
+		0b00100000,
+		0b00000000,
+		0b00000000,
+		0b00000000,
+	};
+
+	static const u8 RightArrow[] =
+	{
+		0b10000000,
+		0b11000000,
+		0b11100000,
+		0b11000000,
+		0b10000000,
+		0b00000000,
+		0b00000000,
+		0b00000000,
+	};
+
+	enum
+	{
+		ArrowWidth = 3, ArrowHeight = 5
+	};
+
+	tic_sample* effect = getEffect(sfx);
+	static const char SetLoopPosLabel[] = "set loop start";
+	static const char SetLoopSizeLabel[] = "set loop size";
+
+	{
+		tic_rect rect = {x + 2, y + 27, ArrowWidth, ArrowHeight};
+		bool hover = false;
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+
+			showTooltip(SetLoopPosLabel);
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+			{
+				effect->loops[canvasTab].start--;
+				history_add(sfx->history);
+			}
+		}
+
+		drawBitIcon(rect.x, rect.y, LeftArrow, hover ? tic_color_14 : tic_color_15);
+	}
+
+	{
+		tic_rect rect = {x + 10, y + 27, ArrowWidth, ArrowHeight};
+		bool hover = false;
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+
+			showTooltip(SetLoopPosLabel);
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+			{
+				effect->loops[canvasTab].start++;
+				history_add(sfx->history);
+			}
+		}
+
+		drawBitIcon(rect.x, rect.y, RightArrow, hover ? tic_color_14 : tic_color_15);
+	}
+
+	{
+		char buf[] = "0";
+		sprintf(buf, "%X", effect->loops[canvasTab].start);
+		tic->api.text(tic, buf, x + 6, y + 27, tic_color_14, true);
+	}
+
+	{
+		tic_rect rect = {x + 14, y + 27, ArrowWidth, ArrowHeight};
+		bool hover = false;
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+			showTooltip(SetLoopSizeLabel);
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+			{
+				effect->loops[canvasTab].size--;
+				history_add(sfx->history);
+			}
+		}
+
+		drawBitIcon(rect.x, rect.y, LeftArrow, hover ? tic_color_14 : tic_color_15);
+	}
+
+	{
+		tic_rect rect = {x + 22, y + 27, ArrowWidth, ArrowHeight};
+		bool hover = false;
+
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+			showTooltip(SetLoopSizeLabel);
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+			{
+				effect->loops[canvasTab].size++;
+				history_add(sfx->history);
+			}
+		}
+
+		drawBitIcon(rect.x, rect.y, RightArrow, hover ? tic_color_14 : tic_color_15);
+	}
+
+	{
+		char buf[] = "0";
+		sprintf(buf, "%X", effect->loops[canvasTab].size);
+		tic->api.text(tic, buf, x + 18, y + 27, tic_color_14, true);
+	}
+
+	drawCanvasLeds(sfx, x + 26, y, canvasTab);
 }
 
 static void playSound(Sfx* sfx)
@@ -507,7 +668,6 @@ static void drawPianoOctave(Sfx* sfx, s32 x, s32 y, s32 octave)
 		}
 	}
 
-
 	bool active = sfx->play.active && effect->octave == octave;
 
 	tic->api.rect(tic, rect.x, rect.y, rect.w, rect.h, tic_color_15);
@@ -671,9 +831,9 @@ static void tick(Sfx* sfx)
 	drawSelector(sfx, 9, 12);
 	drawWavePanel(sfx, 7, 41);
 
-	drawCanvas(sfx, 101, 13, SFX_VOLUME_PANEL);
-	drawCanvas(sfx, 101, 50, SFX_CHORD_PANEL);
-	drawCanvas(sfx, 101, 87, SFX_PITCH_PANEL);
+	drawCanvas(sfx, 88, 12, SFX_VOLUME_PANEL);
+	drawCanvas(sfx, 88, 51, SFX_CHORD_PANEL);
+	drawCanvas(sfx, 88, 90, SFX_PITCH_PANEL);
 
 	drawPiano(sfx, 5, 127);
 
