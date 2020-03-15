@@ -235,6 +235,35 @@ static void drawArppeggioSwitch(Sfx* sfx, s32 x, s32 y)
 	}
 }
 
+static void drawPitchSwitch(Sfx* sfx, s32 x, s32 y)
+{
+	tic_mem* tic = sfx->tic;
+
+	static const char Label[] = "x16";
+
+	enum {Width = (sizeof Label - 1) * TIC_ALTFONT_WIDTH - 1, Height = TIC_FONT_HEIGHT};
+
+	tic_sample* effect = getEffect(sfx);
+
+	{
+		tic_rect rect = {x, y, Width, Height};
+
+		bool hover = false;
+		if(checkMousePos(&rect))
+		{
+			setCursor(tic_cursor_hand);
+			hover = true;
+
+			showTooltip("x16 pitch");
+
+			if(checkMouseClick(&rect, tic_mouse_left))
+				effect->pitch16x = ~effect->pitch16x;
+		}
+
+		tic->api.text(tic, Label, rect.x, rect.y, effect->pitch16x ? tic_color_5 : hover ? tic_color_14 : tic_color_15, true);
+	}
+}
+
 static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 {
 	tic_mem* tic = sfx->tic;
@@ -252,7 +281,7 @@ static void drawCanvas(Sfx* sfx, s32 x, s32 y, s32 canvasTab)
 	{
 	case SFX_VOLUME_PANEL:	drawVolumeStereo(sfx, x + 2, y + 9); break;
 	case SFX_CHORD_PANEL:	drawArppeggioSwitch(sfx, x + 2, y + 9); break;
-	case SFX_PITCH_PANEL:	break;
+	case SFX_PITCH_PANEL:	drawPitchSwitch(sfx, x + 2, y + 9); break;
 	}
 
 	tic->api.text(tic, Labels[canvasTab], x + 2, y + 2, tic_color_15, true);
